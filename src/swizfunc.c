@@ -17,63 +17,43 @@ static void copy_block_ps4_swizzle(const uint8_t *data, int data_index,
     copy_block_ps4_unswizzle(data, dest_index, dest, data_index, block_data_size);
 }
 
-// From GFD-Studio/GFDLibrary/Textures/Swizzle/SwizzleUtilities.cs
-static int morton(int t, int sx, int sy) {
-    int num1;
-    int num2 = num1 = 1;
-    int num3 = t;
-    int num4 = sx;
-    int num5 = sy;
-    int num6 = 0;
-    int num7 = 0;
-
-    while (num4 > 1 || num5 > 1) {
-        if (num4 > 1) {
-            num6 +=  num2 * (num3 & 1);
-            num3 >>= 1;
-            num2 *=  2;
-            num4 >>= 1;
-        }
-        if (num5 > 1) {
-            num7 +=  num1 * (num3 & 1);
-            num3 >>= 1;
-            num1 *=  2;
-            num5 >>= 1;
-        }
-    }
-
-    return num7 * sx + num6;
-}
-
 typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
                                  uint8_t *dest, int dest_index, int block_data_size);
 
-// From GFD-Studio/GFDLibrary/Textures/Swizzle/PS4SwizzleAlgorithm.cs
+// Morton order for 8x8 matrix
+static int MORTON8x8[64] = {
+     0,  1,  8,  9,  2,  3, 10, 11,
+    16, 17, 24, 25, 18, 19, 26, 27,
+     4,  5, 12, 13,  6,  7, 14, 15,
+    20, 21, 28, 29, 22, 23, 30, 31,
+    32, 33, 40, 41, 34, 35, 42, 43,
+    48, 49, 56, 57, 50, 51, 58, 59,
+    36, 37, 44, 45, 38, 39, 46, 47,
+    52, 53, 60, 61, 54, 55, 62, 63
+};
+
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                                int width, int height, int block_width, int block_data_size,
                                CopyBlockFuncPtr copy_block_func) {
-    int height_texels        = ALIGN(height, block_width);
-    int height_texels_aligned = ALIGN(height_texels, 8);
-    int width_texels         = ALIGN(width, block_width);
-    int width_texels_aligned  = ALIGN(width_texels, 8);
-    int dataIndex           = 0;
+    int height_texels = ALIGN(height, block_width);
+    int width_texels = ALIGN(width, block_width);
+    int height_texels_aligned = ALIGN(height_texels, 8) * 8;
+    int width_texels_aligned = ALIGN(width_texels, 8) * 8;
+    int data_index = 0;
 
-    for (int y = 0; y < height_texels_aligned; ++y) {
-        for (int x = 0; x < width_texels_aligned; ++x) {
-            for (int t = 0; t < 64; ++t) {
-                int pixel_index = morton(t, 8, 8);
-                int num8       = pixel_index / 8;
-                int num9       = pixel_index % 8;
-                int y_offset    = (y * 8) + num8;
-                int x_offset    = (x * 8) + num9;
+    for (int y = 0; y < height_texels_aligned; y += 8) {
+        for (int x = 0; x < width_texels_aligned; x += 8) {
+            for (int *t = &MORTON8x8[0]; t < &MORTON8x8[0] + 64; ++t) {
+                int y_offset = y + *t / 8;
+                int x_offset = x + *t % 8;
 
                 if (x_offset < width_texels && y_offset < height_texels) {
                     int dest_pixel_index = y_offset * width_texels + x_offset;
-                    int destIndex      = block_data_size * dest_pixel_index;
-                    copy_block_func(data, dataIndex, new_data, destIndex, block_data_size);
+                    int dest_index = block_data_size * dest_pixel_index;
+                    copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                 }
 
-                dataIndex += block_data_size;
+                data_index += block_data_size;
             }
         }
     }
