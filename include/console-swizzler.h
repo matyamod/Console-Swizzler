@@ -39,7 +39,7 @@ _SWIZ_EXTERN const char* swizGetVersion();
 _SWIZ_EXTERN int swizGetVersionAsInt();
 
 /**
- * Error infomation for swizzling.
+ * Error status for swizzling.
  *
  * @enum SwizError
  */
@@ -60,7 +60,7 @@ _SWIZ_ENUM(SwizError) {
 _SWIZ_EXTERN const char* swizGetErrorMessage(SwizError error);
 
 /**
- * Platform infomation for swizzling.
+ * Platform information for swizzling.
  *
  * @enum SwizPlatform
  */
@@ -95,7 +95,7 @@ _SWIZ_EXTERN SwizContext *swizNewContext();
 _SWIZ_EXTERN void swizFreeContext(SwizContext *context);
 
 /**
- * Sets platform infomation to context.
+ * Sets platform information to context.
  *
  * @param context SwizContext instance
  * @param platform This should be #SWIZ_PLATFORM_PS4

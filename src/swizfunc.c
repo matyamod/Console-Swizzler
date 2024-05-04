@@ -44,20 +44,18 @@ static int morton(int t, int sx, int sy) {
     return num7 * sx + num6;
 }
 
+typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
+                                 uint8_t *dest, int dest_index, int block_size);
+
 // From GFD-Studio/GFDLibrary/Textures/Swizzle/PS4SwizzleAlgorithm.cs
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
-                               int width, int height, int block_size, int swizzle) {
+                               int width, int height, int block_size,
+                               CopyBlockFuncPtr copy_block_func) {
     int height_texels        = height / 4;
     int height_texels_aligned = (height_texels + 7) / 8;
     int width_texels         = width / 4;
     int width_texels_aligned  = (width_texels + 7) / 8;
     int dataIndex           = 0;
-    void (*copy_block_func)(const uint8_t *data, int data_index,
-                            uint8_t *dest, int dest_index, int block_size);
-    if (swizzle)
-        copy_block_func = copy_block_ps4_swizzle;
-    else
-        copy_block_func = copy_block_ps4_unswizzle;
 
     for (int y = 0; y < height_texels_aligned; ++y) {
         for (int x = 0; x < width_texels_aligned; ++x) {
@@ -81,9 +79,9 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 }
 
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size) {
-    swiz_func_ps4_base(data, new_data, width, height, block_size, 1);
+    swiz_func_ps4_base(data, new_data, width, height, block_size, copy_block_ps4_swizzle);
 }
 
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size) {
-    swiz_func_ps4_base(data, new_data, width, height, block_size, 0);
+    swiz_func_ps4_base(data, new_data, width, height, block_size, copy_block_ps4_unswizzle);
 }
