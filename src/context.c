@@ -3,6 +3,7 @@
 #include "swizfunc.h"
 
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+#define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD))
 
 SwizContext *swizNewContext() {
     SwizContext *context = (SwizContext *)malloc(sizeof(SwizContext));
@@ -10,7 +11,8 @@ SwizContext *swizNewContext() {
         context->platform = SWIZ_PLATFORM_UNK;
         context->width = 0;
         context->height = 0;
-        context->block_size = 0;
+        context->block_width = 4;
+        context->block_data_size = 0;
         context->has_mips = 0;
         context->SwizFunc = swizFuncDefault;
         context->UnswizFunc = swizFuncDefault;
@@ -41,8 +43,11 @@ SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
 SwizError swizContextSetTextureSize(SwizContext *context, int width, int height) {
     context->width = width;
     context->height = height;
-    if (context->width % 4 != 0 || context->height % 4 != 0)
+    if (context->width < 0 || context->height < 0) {
         context->error = SWIZ_ERROR_INVALID_TEXTURE_SIZE;
+        context->width = 0;
+        context->height = 0;
+    }
     return context->error;
 }
 
@@ -50,8 +55,15 @@ void swizContextSetHasMips(SwizContext *context, int has_mips) {
     context->has_mips = has_mips > 0;
 }
 
-void swizContextSetBlockSize(SwizContext *context, int block_size) {
-    context->block_size = block_size;
+SwizError swizContextSetBlockInfo(SwizContext *context, int block_width, int block_data_size) {
+    context->block_width = block_width;
+    context->block_data_size = block_data_size;
+    if (block_width <= 0 || block_data_size < 0) {
+        context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
+        block_width = 1;
+        block_data_size = 0;
+    }
+    return context->error;
 }
 
 SwizError swizContextGetLastError(SwizContext *context) {
@@ -63,18 +75,19 @@ uint32_t swizContextGetDataSize(SwizContext *context) {
         return 0;
     uint32_t width = context->width;
     uint32_t height = context->height;
-    uint32_t block_size = context->block_size;
+    uint32_t block_width = context->block_width;
+    uint32_t block_data_size = context->block_data_size;
     uint32_t width_aligned, height_aligned;
-    uint32_t data_size = (width / 4) * (height / 4) * block_size;
+    uint32_t data_size = ALIGN(width, block_width) * ALIGN(height, block_width) * block_data_size;
     if (!context->has_mips)
         return data_size;
 
     while (width > 1 || height > 1) {
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
-        width_aligned = (width + 3) / 4;
-        height_aligned = (height + 3) / 4;
-        data_size += width_aligned * height_aligned * block_size;
+        width_aligned = ALIGN(width, block_width);
+        height_aligned = ALIGN(height, block_width);
+        data_size += width_aligned * height_aligned * block_data_size;
     }
     return data_size;
 }
@@ -95,25 +108,26 @@ static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
         return context->error;
     uint32_t width = context->width;
     uint32_t height = context->height;
-    uint32_t block_size = context->block_size;
+    uint32_t block_width = context->block_width;
+    uint32_t block_data_size = context->block_data_size;
     uint32_t width_aligned, height_aligned;
 
-    SwizFunc(data, swizzled, width, height, block_size);
+    SwizFunc(data, swizzled, width, height, block_width, block_data_size);
 
     if (!context->has_mips)
         return context->error;
 
-    uint32_t data_size = (width / 4) * (height / 4) * block_size;
+    uint32_t data_size = ALIGN(width, block_width) * ALIGN(height, block_width) * block_data_size;
     data += data_size;
     swizzled += data_size;
 
     while (width > 1 || height > 1) {
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
-        width_aligned = (width + 3) / 4;
-        height_aligned = (height + 3) / 4;
-        SwizFunc(data, swizzled, width_aligned, height_aligned, block_size);
-        data_size = width_aligned * height_aligned * block_size;
+        width_aligned = ALIGN(width, block_width);
+        height_aligned = ALIGN(height, block_width);
+        SwizFunc(data, swizzled, width_aligned, height_aligned, block_width, block_data_size);
+        data_size = width_aligned * height_aligned * block_data_size;
         data += data_size;
         swizzled += data_size;
     }

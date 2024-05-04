@@ -15,7 +15,6 @@ Rest of them are here.
 ## swizzler-cli
 
 Built binary contains swizzler-cli that can swizzle dds data.
-Note that it only supports BC1~BC7 textures for now.
 
 ```
 Usage: swizzler-cli <command> <input> <output> [<platform>]
@@ -41,11 +40,10 @@ int main() {
     SwizContext *context = swizNewContext();
     SwizError ret = SWIZ_OK;
 
-    // 256x256 DXT1 texture with mipmaps
-    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
-    swizContextSetTextureSize(context, 256, 256);
-    swizContextSetHasMips(context, 1);
-    swizContextSetBlockSize(context, 8);
+    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);  // PS4 swizzling
+    swizContextSetTextureSize(context, 256, 256);  // 256x256 texture
+    swizContextSetHasMips(context, 1);  // swizzled_data contains mipmaps
+    swizContextSetBlockInfo(context, 4, 8);  // 4x4 8-byte block
 
     // Get the swizzled pixel data somehow.
     uint8_t *swizzled_data = ...;
@@ -55,6 +53,7 @@ int main() {
     if (swizzled_data_size < swizContextGetDataSize(context)) {
         printf("Console Swizzler expects more data.\n");
         swizFreeContext(context);
+        free(swizzled_data);
         return 1;
     }
 
@@ -69,6 +68,7 @@ int main() {
     if (ret != SWIZ_OK) {
         printf("%s\n", swizGetErrorMessage(ret));
         swizFreeContext(context);
+        free(swizzled_data);
         free(unswizzled_data);
         return 1;
     }
@@ -77,6 +77,7 @@ int main() {
 
     // Free allocated data
     swizFreeContext(context);
+    free(swizzled_data);
     free(unswizzled_data);
     return 0;
 }

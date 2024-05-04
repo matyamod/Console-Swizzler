@@ -18,8 +18,8 @@ extern "C" {
 #define _SWIZ_ENUM(s) typedef unsigned int s; enum
 
 // Version info
-#define SWIZ_VERSION "0.1.0"
-#define SWIZ_VERSION_INT 100
+#define SWIZ_VERSION "0.2.0"
+#define SWIZ_VERSION_INT 200
 
 /**
  * Gets the version of console-swizzler.
@@ -47,6 +47,7 @@ _SWIZ_ENUM(SwizError) {
     SWIZ_OK = 0,
     SWIZ_ERROR_UNKNOWN_PLATFORM,
     SWIZ_ERROR_INVALID_TEXTURE_SIZE,
+    SWIZ_ERROR_INVALID_BLOCK_INFO,
     SWIZ_ERROR_MEMORY_ALLOC,
     SWIZ_ERROR_MAX,
 };
@@ -128,10 +129,13 @@ _SWIZ_EXTERN void swizContextSetHasMips(SwizContext *context, int has_mips);
  * Sets block size to context.
  *
  * @param context SwizContext instance
- * @param block_size Data size of a 4x4 block
+ * @param block_width Width of a block (four for BC formats, one for uncompressed formats.)
+ * @param block_data_size Data size of a block
+ * @returns Non-zero if it got errors
  * @memberof SwizContext
  */
-_SWIZ_EXTERN void swizContextSetBlockSize(SwizContext *context, int block_size);
+_SWIZ_EXTERN SwizError swizContextSetBlockInfo(SwizContext *context,
+                                               int block_width, int block_data_size);
 
 /**
  * Gets error status of context.

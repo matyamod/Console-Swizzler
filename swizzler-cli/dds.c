@@ -10,14 +10,27 @@
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 #define IMAGE_PITCH(width, block_size) MAX(1, ((width + 3) / 4)) * block_size
 
-int dds_get_block_size(dds_image_t image) {
+int same_rgba_mask(dds_image_t image,
+                   dds_uint r_bit_mask, dds_uint g_bit_mask,
+                   dds_uint b_bit_mask, dds_uint a_bit_mask) {
+    return image->header.pixel_format.r_bit_mask == r_bit_mask
+           && image->header.pixel_format.g_bit_mask == g_bit_mask
+           && image->header.pixel_format.b_bit_mask == b_bit_mask
+           && image->header.pixel_format.a_bit_mask == a_bit_mask;
+}
+
+void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_size) {
+    *block_width = 4;
+    *block_data_size = 0;
+    dds_uint dxgi_format;
     if (image->header.pixel_format.flags & DDPF_FOURCC) {
         switch (image->header.pixel_format.four_cc) {
         case 0x31545844:  // FOURCC("DXT1")
         case 0x55344342:  // FOURCC("BC4U")
         case 0x31495441:  // FOURCC("ATI1")
         case 0x53344342:  // FOURCC("BC4S")
-            return 8;
+            *block_data_size = 8;
+            return;
         case 0x32545844:  // FOURCC("DXT2")
         case 0x33545844:  // FOURCC("DXT3")
         case 0x34545844:  // FOURCC("DXT4")
@@ -28,16 +41,19 @@ int dds_get_block_size(dds_image_t image) {
         case 0x48364342:  // FOURCC("BC6H")
         case 0x4c374342:  // FOURCC("BC7L")
         case 0x374342:    // FOURCC("BC7")
-            return 16;
+            *block_data_size = 16;
+            return;
         case 0x30315844:  // FOURCC("DX10"):
-            switch (image->header10.dxgi_format) {
+            dxgi_format = image->header10.dxgi_format;
+            switch (dxgi_format) {
             case 70:  // BC1
             case 71:
             case 72:
             case 79:  // BC4
             case 80:
             case 81:
-                return 8;
+                *block_data_size = 8;
+                return;
             case 73:  // BC2
             case 74:
             case 75:
@@ -53,16 +69,58 @@ int dds_get_block_size(dds_image_t image) {
             case 97:  // BC7
             case 98:
             case 99:
-                return 16;
-
+                *block_data_size = 16;
+                return;
+            case 85:
+            case 86:
+                *block_width = 1;
+                *block_data_size = 2;
+                return;
+            case 87:
+            case 88:
+            case 89:
+            case 90:
+            case 91:
+            case 92:
+            case 93:
+                *block_width = 1;
+                *block_data_size = 4;
+                return;
             default:
-                return 0;
+                break;
             }
+            *block_width = 1;
+            if (dxgi_format == 0)
+                *block_data_size = 0;
+            else if (dxgi_format <= 4)
+                *block_data_size = 16;
+            else if (dxgi_format <= 8)
+                *block_data_size = 12;
+            else if (dxgi_format <= 22)
+                *block_data_size = 8;
+            else if (dxgi_format <= 47)
+                *block_data_size = 4;
+            else if (dxgi_format <= 59)
+                *block_data_size = 2;
+            else if (dxgi_format <= 65)
+                *block_data_size = 1;
+            else if (dxgi_format <= 66)
+                *block_data_size = 0;  // R1_UNORM is unsupported
+            else if (dxgi_format <= 69)
+                *block_data_size = 4;
+            else if (dxgi_format <= 86)
+                *block_data_size = 2;
+            else if (dxgi_format <= 93)
+                *block_data_size = 4;
+            else  // dxgi_format >= 94
+                *block_data_size = 0;  // unsupported formats
         default:
-            return 0;
+            return;
         }
     }
-    return 0;
+    *block_width = 1;
+    *block_data_size = image->header.pixel_format.rgb_bit_count / 8;
+    return;
 }
 
 dds_image_t dds_load_from_memory(const char* data, long data_length)

@@ -9,13 +9,14 @@ extern "C" {
 #endif
 
 typedef void (*SwizFuncPtr)(const uint8_t *data, uint8_t *new_data,
-                            int width, int height, int block_size);
+                            int width, int height, int block_width, int block_data_size);
 
 struct SwizContext {
     SwizPlatform platform;
     int width;
     int height;
-    int block_size;
+    int block_width;
+    int block_data_size;
     int has_mips;
     SwizFuncPtr SwizFunc;
     SwizFuncPtr UnswizFunc;

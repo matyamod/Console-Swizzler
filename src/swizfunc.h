@@ -8,9 +8,12 @@
 extern "C" {
 #endif
 
-void swizFuncDefault(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size);
-void swizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size);
-void unswizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size);
+void swizFuncDefault(const uint8_t *data, uint8_t *new_data,
+                     int width, int height, int block_width, int block_data_size);
+void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
+                 int width, int height, int block_width, int block_data_size);
+void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
+                   int width, int height, int block_width, int block_data_size);
 
 #ifdef __cplusplus
 }

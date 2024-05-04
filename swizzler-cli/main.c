@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    int width, height, block_size;
+    int width, height, block_width, block_data_size;
     SwizContext *context;
     SwizError ret;
 
@@ -63,9 +63,9 @@ int main(int argc, char* argv[]) {
 
     width = image->header.width;
     height = image->header.height;
-    block_size = dds_get_block_size(image);
-    if (block_size == 0) {
-        printf("Unsupported pixel format. Only BC1 ~ BC7 textures are supported.");
+    dds_get_block_info(image, &block_width, &block_data_size);
+    if (block_data_size == 0) {
+        printf("Unsupported pixel format.");
         return 1;
     }
 
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, width, height);
     swizContextSetHasMips(context, image->header.mipmap_count > 1);
-    swizContextSetBlockSize(context, block_size);
+    swizContextSetBlockInfo(context, block_width, block_data_size);
 
     uint32_t data_size = swizContextGetDataSize(context);
     if (image->pixels_size < data_size) {

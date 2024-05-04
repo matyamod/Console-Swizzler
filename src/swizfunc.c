@@ -1,19 +1,20 @@
 #include <string.h>
 #include "swizfunc.h"
+#define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD))
 
 void swizFuncDefault(const uint8_t *data, uint8_t *new_data,
-                     int width, int height, int block_size) {
+                     int width, int height, int block_width, int block_data_size) {
     return;
 }
 
 static void copy_block_ps4_unswizzle(const uint8_t *data, int data_index,
-                                   uint8_t *dest, int dest_index, int block_size) {
-    memcpy(dest + dest_index, data + data_index, block_size);
+                                   uint8_t *dest, int dest_index, int block_data_size) {
+    memcpy(dest + dest_index, data + data_index, block_data_size);
 }
 
 static void copy_block_ps4_swizzle(const uint8_t *data, int data_index,
-                                   uint8_t *dest, int dest_index, int block_size) {
-    copy_block_ps4_unswizzle(data, dest_index, dest, data_index, block_size);
+                                   uint8_t *dest, int dest_index, int block_data_size) {
+    copy_block_ps4_unswizzle(data, dest_index, dest, data_index, block_data_size);
 }
 
 // From GFD-Studio/GFDLibrary/Textures/Swizzle/SwizzleUtilities.cs
@@ -45,16 +46,16 @@ static int morton(int t, int sx, int sy) {
 }
 
 typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
-                                 uint8_t *dest, int dest_index, int block_size);
+                                 uint8_t *dest, int dest_index, int block_data_size);
 
 // From GFD-Studio/GFDLibrary/Textures/Swizzle/PS4SwizzleAlgorithm.cs
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
-                               int width, int height, int block_size,
+                               int width, int height, int block_width, int block_data_size,
                                CopyBlockFuncPtr copy_block_func) {
-    int height_texels        = height / 4;
-    int height_texels_aligned = (height_texels + 7) / 8;
-    int width_texels         = width / 4;
-    int width_texels_aligned  = (width_texels + 7) / 8;
+    int height_texels        = ALIGN(height, block_width);
+    int height_texels_aligned = ALIGN(height_texels, 8);
+    int width_texels         = ALIGN(width, block_width);
+    int width_texels_aligned  = ALIGN(width_texels, 8);
     int dataIndex           = 0;
 
     for (int y = 0; y < height_texels_aligned; ++y) {
@@ -68,20 +69,24 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 
                 if (x_offset < width_texels && y_offset < height_texels) {
                     int dest_pixel_index = y_offset * width_texels + x_offset;
-                    int destIndex      = block_size * dest_pixel_index;
-                    copy_block_func(data, dataIndex, new_data, destIndex, block_size);
+                    int destIndex      = block_data_size * dest_pixel_index;
+                    copy_block_func(data, dataIndex, new_data, destIndex, block_data_size);
                 }
 
-                dataIndex += block_size;
+                dataIndex += block_data_size;
             }
         }
     }
 }
 
-void swizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size) {
-    swiz_func_ps4_base(data, new_data, width, height, block_size, copy_block_ps4_swizzle);
+void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
+                 int width, int height, int block_width, int block_data_size) {
+    swiz_func_ps4_base(data, new_data, width, height,
+                       block_width, block_data_size, copy_block_ps4_swizzle);
 }
 
-void unswizFuncPS4(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size) {
-    swiz_func_ps4_base(data, new_data, width, height, block_size, copy_block_ps4_unswizzle);
+void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
+                   int width, int height, int block_width, int block_data_size) {
+    swiz_func_ps4_base(data, new_data, width, height,
+                       block_width, block_data_size, copy_block_ps4_unswizzle);
 }
