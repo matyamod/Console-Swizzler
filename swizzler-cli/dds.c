@@ -212,12 +212,19 @@ int dds_save(dds_image_t image, const char* filename)
         return 0;
 
     dds_uint magic = 0x20534444;
-    fwrite(&magic, sizeof(magic), 1, f);
-    fwrite(&image->header, sizeof(struct dds_header), 1, f);
+    size_t ret;
+    ret = fwrite(&magic, sizeof(magic), 1, f);
+    if (ret != 1) return 0;
+    ret = fwrite(&image->header, sizeof(struct dds_header), 1, f);
+    if (ret != 1) return 0;
 
-    if ((image->header.pixel_format.flags & DDPF_FOURCC) && image->header.pixel_format.four_cc == FOURCC("DX10"))
-        fwrite(&image->header10, sizeof(struct dds_header_dxt10), 1, f);
-    fwrite(image->pixels, 1, image->pixels_size, f);
+    if ((image->header.pixel_format.flags & DDPF_FOURCC) && image->header.pixel_format.four_cc == FOURCC("DX10")) {
+        ret = fwrite(&image->header10, sizeof(struct dds_header_dxt10), 1, f);
+        if (ret != 1) return 0;
+    }
+
+    ret = fwrite(image->pixels, 1, image->pixels_size, f);
+    if (ret != image->pixels_size) return 0;
     fclose(f);
     return 1;
 }

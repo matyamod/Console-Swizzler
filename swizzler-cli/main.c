@@ -54,6 +54,7 @@ int main(int argc, char* argv[]) {
     SwizContext *context;
     SwizError ret;
 
+    printf("Loading %s...\n", input_filename);
     dds_image_t image = dds_load(input_filename);
     if (image == NULL) {
         printf("Failed to load dds.");
@@ -88,15 +89,21 @@ int main(int argc, char* argv[]) {
     else
         ret = swizDoUnswizzle(image->pixels, out_image->pixels, context);
     swizFreeContext(context);
+    dds_image_free(image);
 
     if (ret != SWIZ_OK) {
         printf("%s\n", swizGetErrorMessage(ret));
-        dds_image_free(image);
         dds_image_free(out_image);
         return 1;
     }
-    dds_save(out_image, output_filename);
-    dds_image_free(image);
+    printf("Saving %s...\n", output_filename);
+    int saved = dds_save(out_image, output_filename);
+    if (!saved) {
+        printf("Failed to save a dds file.\n");
+        dds_image_free(out_image);
+        return 1;
+    }
+    printf("Done.\n");
     dds_image_free(out_image);
     return 0;
 }
