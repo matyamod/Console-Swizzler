@@ -82,3 +82,23 @@ int main() {
     return 0;
 }
 ```
+
+## Building
+
+### Requirements
+
+- [Meson](https://mesonbuild.com/) for building
+
+### Build Whole Project
+
+```bash
+meson setup build --buildtype=release
+meson compile -C build
+```
+
+### Build Library Only
+
+```bash
+meson setup build --buildtype=release -Dcli=false
+meson compile -C build
+```

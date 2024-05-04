@@ -21,12 +21,13 @@ install_headers('include/console-swizzler.h')
 console_swizzler_dep = declare_dependency(include_directories: include_directories('./include'),
 	link_with : console_swizzler)
 
-cli_sources = [
-    'swizzler-cli/main.c',
-    'swizzler-cli/dds.c',
-]
-
-executable('swizzler-cli',
-    cli_sources,
-    dependencies: console_swizzler_dep,
-    install : true)
+if get_option('cli')
+    cli_sources = [
+        'swizzler-cli/main.c',
+        'swizzler-cli/dds.c',
+    ]
+    executable('swizzler-cli',
+        cli_sources,
+        dependencies: console_swizzler_dep,
+        install : true)
+endif
