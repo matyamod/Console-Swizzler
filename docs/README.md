@@ -1,5 +1,16 @@
 # Console-Swizzler
-C library to swizzle DDS textures for console games
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Console-Swizzler is a C library to swizzle DDS textures for console games.
+
+## Documentation
+
+Most of the functions are here.  
+[Console-Swizzler: SwizContext Struct Reference](https://matyamod.github.io/Console-Swizzler/struct_swiz_context.html)  
+
+Rest of them are here.  
+[Console-Swizzler: include/console-swizzler.h File Reference](https://matyamod.github.io/Console-Swizzler/console-swizzler_8h.html)
 
 ## swizzler-cli
 
@@ -23,7 +34,7 @@ Examples:
 
 ## Example
 
-```
+```c
 #include "console-swizzler.h"
 
 int main() {
