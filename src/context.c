@@ -25,7 +25,7 @@ void swizFreeContext(SwizContext *context) {
 
 SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
     context->platform = platform;
-    switch(platform) {
+    switch (platform) {
     case SWIZ_PLATFORM_PS4:
         context->SwizFunc = swizFuncPS4;
         context->UnswizFunc = unswizFuncPS4;
@@ -89,7 +89,8 @@ SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
     return context->error;
 }
 
-static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled, SwizContext *context, SwizFuncPtr SwizFunc) {
+static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
+                                   SwizContext *context, SwizFuncPtr SwizFunc) {
     if (context->error != SWIZ_OK)
         return context->error;
     uint32_t width = context->width;

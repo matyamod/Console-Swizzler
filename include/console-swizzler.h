@@ -158,7 +158,8 @@ _SWIZ_EXTERN uint32_t swizContextGetDataSize(SwizContext *context);
  * @note Allocated data should be freed with free().
  *
  * @param context SwizContext instance
- * @param new_data_ptr A pointer for allocated data. The size of *new_data_ptr will be equal to swizContextGetDataSize().
+ * @param new_data_ptr A pointer for allocated data.\n
+ *                     The size of *new_data_ptr will be equal to swizContextGetDataSize().
  * @returns Non-zero if it got errors
  * @memberof SwizContext
  */
@@ -184,7 +185,8 @@ _SWIZ_EXTERN SwizError swizDoSwizzle(const uint8_t *data, uint8_t *swizzled, Swi
  * @returns Non-zero if it got errors
  * @memberof SwizContext
  */
-_SWIZ_EXTERN SwizError swizDoUnswizzle(const uint8_t *data, uint8_t *unswizzled, SwizContext *context);
+_SWIZ_EXTERN SwizError swizDoUnswizzle(const uint8_t *data, uint8_t *unswizzled,
+                                       SwizContext *context);
 
 #ifdef __cplusplus
 }

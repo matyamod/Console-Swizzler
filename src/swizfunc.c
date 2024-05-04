@@ -1,7 +1,8 @@
 #include <string.h>
 #include "swizfunc.h"
 
-void swizFuncDefault(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size) {
+void swizFuncDefault(const uint8_t *data, uint8_t *new_data,
+                     int width, int height, int block_size) {
     return;
 }
 
@@ -16,7 +17,7 @@ static void copy_block_ps4_swizzle(const uint8_t *data, int data_index,
 }
 
 // From GFD-Studio/GFDLibrary/Textures/Swizzle/SwizzleUtilities.cs
-static int morton(int t, int sx, int sy){
+static int morton(int t, int sx, int sy) {
     int num1;
     int num2 = num1 = 1;
     int num3 = t;
@@ -44,7 +45,8 @@ static int morton(int t, int sx, int sy){
 }
 
 // From GFD-Studio/GFDLibrary/Textures/Swizzle/PS4SwizzleAlgorithm.cs
-static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size, int swizzle) {
+static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
+                               int width, int height, int block_size, int swizzle) {
     int height_texels        = height / 4;
     int height_texels_aligned = (height_texels + 7) / 8;
     int width_texels         = width / 4;

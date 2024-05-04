@@ -8,7 +8,8 @@
 extern "C" {
 #endif
 
-typedef void (*SwizFuncPtr)(const uint8_t *data, uint8_t *new_data, int width, int height, int block_size);
+typedef void (*SwizFuncPtr)(const uint8_t *data, uint8_t *new_data,
+                            int width, int height, int block_size);
 
 struct SwizContext {
     SwizPlatform platform;
