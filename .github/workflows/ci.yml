@@ -63,7 +63,7 @@ jobs:
           meson install --destdir package
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-x64-${{ matrix.buildtype}}
           path: build/package
