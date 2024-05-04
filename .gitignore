@@ -1,6 +1,7 @@
 build
 *.exe
 *.bat
+!batch_files/*.bat
 *.dds
 
 # doxygen
