@@ -43,11 +43,11 @@ int main(int argc, char* argv[]) {
 
     if (argc == 5) {
         platform_name = argv[4];
-        if (strcmp(platform_name, "switch") == 0)
+        if (strcmp(platform_name, "switch") == 0) {
             platform = SWIZ_PLATFORM_SWITCH;
-        else if (strcmp(platform_name, "ps4") != 0) {
+        } else if (strcmp(platform_name, "ps4") != 0) {
             printUsage();
-            printf("Unknown platform. (%s)", platform);
+            printf("Unknown platform. (%s)", platform_name);
             return 1;
         }
         printf("Platform: %s\n", platform_name);

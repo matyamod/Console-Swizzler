@@ -3,14 +3,16 @@
 
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-#define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD))
+#define CEIL_DIV(X, PAD) (((X) + (PAD) - 1) / (PAD))
+#define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD) * (PAD))
 
 void swizFuncDefault(const uint8_t *data, uint8_t *new_data,
                      int width, int height, int block_width, int block_data_size) {
     return;
 }
 
-// ps4 swizzling functions
+typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
+                                 uint8_t *dest, int dest_index, int block_data_size);
 
 static void copy_block(const uint8_t *data, int data_index,
                                    uint8_t *dest, int dest_index, int block_data_size) {
@@ -22,8 +24,11 @@ static void copy_block_inverse(const uint8_t *data, int data_index,
     copy_block(data, dest_index, dest, data_index, block_data_size);
 }
 
-typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
-                                 uint8_t *dest, int dest_index, int block_data_size);
+static int block_pos_to_index(int x, int y, int block_count_x, int block_data_size) {
+    return (y * block_count_x + x) * block_data_size;
+}
+
+// ps4 swizzling functions
 
 // Morton order for 8x8 matrix
 static int MORTON8x8[64] = {
@@ -37,31 +42,31 @@ static int MORTON8x8[64] = {
     52, 53, 60, 61, 54, 55, 62, 63
 };
 
-static int block_pos_to_index(int x, int y, int block_count_x, int block_data_size) {
-    return (y * block_count_x + x) * block_data_size;
-}
+#define GOB_BLOCK_COUNT_X_PS4 8
+#define GOB_BLOCK_COUNT_PS4 64
 
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                                int width, int height, int block_width, int block_data_size,
                                CopyBlockFuncPtr copy_block_func) {
-    int height_texels = ALIGN(height, block_width);
-    int width_texels = ALIGN(width, block_width);
-    int height_texels_aligned = ALIGN(height_texels, 8) * 8;
-    int width_texels_aligned = ALIGN(width_texels, 8) * 8;
-    int data_index = 0;
+    int block_count_x = CEIL_DIV(width, block_width);
+    int block_count_y = CEIL_DIV(height, block_width);
+    int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
+    int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
+    int dest_index = 0;
 
-    for (int y = 0; y < height_texels_aligned; y += 8) {
-        for (int x = 0; x < width_texels_aligned; x += 8) {
-            for (int *t = &MORTON8x8[0]; t < &MORTON8x8[0] + 64; ++t) {
-                int y_offset = y + *t / 8;
-                int x_offset = x + *t % 8;
+    for (int y = 0; y < block_count_y_aligned; y += GOB_BLOCK_COUNT_X_PS4) {
+        for (int x = 0; x < block_count_x_aligned; x += GOB_BLOCK_COUNT_X_PS4) {
+            for (int *t = &MORTON8x8[0]; t < &MORTON8x8[0] + GOB_BLOCK_COUNT_PS4; ++t) {
+                int data_y = y + *t / GOB_BLOCK_COUNT_X_PS4;
+                int data_x = x + *t % GOB_BLOCK_COUNT_X_PS4;
 
-                if (x_offset < width_texels && y_offset < height_texels) {
-                    int dest_index = block_pos_to_index(x_offset, y_offset, width_texels, block_data_size);
+                if (data_x < block_count_x && data_y < block_count_y) {
+                    int data_index = block_pos_to_index(data_x, data_y,
+                                                        block_count_x, block_data_size);
                     copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                 }
 
-                data_index += block_data_size;
+                dest_index += block_data_size;
             }
         }
     }
@@ -70,20 +75,20 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
                  int width, int height, int block_width, int block_data_size) {
     swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_data_size, copy_block_inverse);
+                       block_width, block_data_size, copy_block);
 }
 
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
                    int width, int height, int block_width, int block_data_size) {
     swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_data_size, copy_block);
+                       block_width, block_data_size, copy_block_inverse);
 }
 
 // switch swizzling functions
 
-const int GOB_X_BLOCK_COUNT = 4;
-const int GOB_Y_BLOCK_COUNT = 8;
-const int BLOCKS_IN_GOB = GOB_X_BLOCK_COUNT * GOB_Y_BLOCK_COUNT;
+#define GOB_BLOCK_COUNT_X_SWITCH 4
+#define GOB_BLOCK_COUNT_Y_SWITCH 8
+#define GOB_BLOCK_COUNT_SWITCH 32
 
 // Morton order for transposed 4x8 matrix
 static int TRANS_MORTON4x8[32] = {
@@ -104,25 +109,26 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
     int block_height = block_width;
     if (block_data_size > 0 && block_data_size < 16)
         block_height *= 16 / block_data_size;
-    int block_count_x = ALIGN(width, block_width);
-    int block_count_y = ALIGN(height, block_height);
+    int block_count_x = CEIL_DIV(width, block_width);
+    int block_count_y = CEIL_DIV(height, block_height);
 
-    int gob_count_x = ALIGN(block_count_x, GOB_X_BLOCK_COUNT);
-    int gob_count_y = ALIGN(block_count_y, GOB_Y_BLOCK_COUNT);
+    int gob_count_x = CEIL_DIV(block_count_x, GOB_BLOCK_COUNT_X_SWITCH);
+    int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
 
     int dest_index = 0;
-    int gobs_per_block = MIN(ALIGN(width, 8), 16);
-    int max_gob_x = (gob_count_x - 1) * GOB_X_BLOCK_COUNT;
+    int gobs_per_block = MIN(CEIL_DIV(width, 8), 16);
+    int max_gob_x = (gob_count_x - 1) * GOB_BLOCK_COUNT_X_SWITCH;
     for (int i = 0; i < gob_count_y / gobs_per_block; i++) {
-        for (int x = max_gob_x; x >= 0; x -= GOB_X_BLOCK_COUNT) {
+        for (int x = max_gob_x; x >= 0; x -= GOB_BLOCK_COUNT_X_SWITCH) {
             for (int k = gobs_per_block - 1; k >= 0; k--) {
-                for (int *l = &TRANS_MORTON4x8[0]; l < &TRANS_MORTON4x8[0] + 32; ++l) {
-                    int gob_x = *l % 4;
-                    int gob_y = 7 - *l / 4;
-                    int data_x = x + gob_x;
-                    int data_y = (i * gobs_per_block + k) * GOB_Y_BLOCK_COUNT + gob_y;
+                for (int *l = &TRANS_MORTON4x8[0];
+                     l < &TRANS_MORTON4x8[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
+                    int data_x = x + *l % GOB_BLOCK_COUNT_X_SWITCH;
+                    int gob_y = GOB_BLOCK_COUNT_Y_SWITCH - 1 - *l / GOB_BLOCK_COUNT_X_SWITCH;
+                    int data_y = (i * gobs_per_block + k) * GOB_BLOCK_COUNT_Y_SWITCH + gob_y;
 
-                    int data_index = block_pos_to_index(data_x, data_y, block_count_x, block_data_size);
+                    int data_index = block_pos_to_index(data_x, data_y,
+                                                        block_count_x, block_data_size);
                     copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                     dest_index += block_data_size;
                 }
