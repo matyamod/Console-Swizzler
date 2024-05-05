@@ -32,6 +32,10 @@ SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
         context->SwizFunc = swizFuncPS4;
         context->UnswizFunc = unswizFuncPS4;
         break;
+    case SWIZ_PLATFORM_SWITCH:
+        context->SwizFunc = swizFuncSwitch;
+        context->UnswizFunc = unswizFuncSwitch;
+        break;
     default:
         context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
         context->SwizFunc = swizFuncDefault;

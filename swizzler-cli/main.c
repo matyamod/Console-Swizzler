@@ -11,8 +11,7 @@ void printUsage() {
         "        swizzle : swizzles an input dds.\n"
         "        unswizzle : unswizzles an input dds.\n"
         "\n"
-        "    platform:\n"
-        "        ps4 : Only PS4 swizzling is supported for now.\n"
+        "    platform: ps4, switch\n"
         "\n"
         "Examples:\n"
         "    swizzler-cli swizzle raw.dds swizzled.dds\n"
@@ -39,15 +38,21 @@ int main(int argc, char* argv[]) {
 
     const char* input_filename = argv[2];
     const char* output_filename = argv[3];
-    const char* platform;
+    const char* platform_name;
+    SwizPlatform platform = SWIZ_PLATFORM_PS4;
 
-    if (argc != 5) {
-        platform = argv[4];
-        if (strcmp(platform, "ps4") != 0) {
+    if (argc == 5) {
+        platform_name = argv[4];
+        if (strcmp(platform_name, "switch") == 0)
+            platform = SWIZ_PLATFORM_SWITCH;
+        else if (strcmp(platform_name, "ps4") != 0) {
             printUsage();
             printf("Unknown platform. (%s)", platform);
             return 1;
         }
+        printf("Platform: %s\n", platform_name);
+    } else {
+        printf("Platform: ps4\n");
     }
 
     int width, height, block_width, block_data_size;
@@ -71,7 +76,7 @@ int main(int argc, char* argv[]) {
     }
 
     context = swizNewContext();
-    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
+    swizContextSetPlatform(context, platform);
     swizContextSetTextureSize(context, width, height);
     swizContextSetHasMips(context, image->header.mipmap_count > 1);
     swizContextSetBlockInfo(context, block_width, block_data_size);

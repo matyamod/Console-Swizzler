@@ -18,8 +18,8 @@ extern "C" {
 #define _SWIZ_ENUM(s) typedef unsigned int s; enum
 
 // Version info
-#define SWIZ_VERSION "0.2.0"
-#define SWIZ_VERSION_INT 200
+#define SWIZ_VERSION "0.3.0"
+#define SWIZ_VERSION_INT 300
 
 /**
  * Gets the version of console-swizzler.
@@ -68,6 +68,7 @@ _SWIZ_EXTERN const char* swizGetErrorMessage(SwizError error);
 _SWIZ_ENUM(SwizPlatform) {
     SWIZ_PLATFORM_UNK = 0,
     SWIZ_PLATFORM_PS4,  //!< PS4
+    SWIZ_PLATFORM_SWITCH,  //!< Switch
     SWIZ_PLATFORM_MAX,
 };
 
