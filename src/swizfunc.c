@@ -71,7 +71,7 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                 int data_x = x + *t % GOB_BLOCK_COUNT_X_PS4;
                 int data_y = y + *t / GOB_BLOCK_COUNT_X_PS4;
 
-                if (data_x >= block_count_x && data_y >= block_count_y)
+                if (data_x >= block_count_x || data_y >= block_count_y)
                     continue;
                 // copy a block in (data_x, data_y) to new_data
                 int data_index = block_pos_to_index(data_x, data_y,
@@ -129,8 +129,8 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                                   int width, int height, int block_width, int block_data_size,
                                   CopyBlockFuncPtr copy_block_func) {
     int block_height = block_width;
-    if (block_data_size > 0 && block_data_size < 16)
-        block_height *= 16 / block_data_size;
+    //if (block_data_size > 0 && block_data_size < 16)
+        //block_height *= 16 / block_data_size;
     int block_count_x = CEIL_DIV(width, block_width);
     int block_count_y = CEIL_DIV(height, block_height);
 
@@ -149,6 +149,8 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                      l < &ROTATED_MORTON4x8[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
                     int data_x = x + *l % GOB_BLOCK_COUNT_X_SWITCH;
                     int data_y = y + *l / GOB_BLOCK_COUNT_X_SWITCH;
+                    if (data_x >= block_count_x || data_y >= block_count_y)
+                        continue;
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         block_count_x, block_data_size);
                     copy_block_func(data, data_index, new_data, dest_index, block_data_size);

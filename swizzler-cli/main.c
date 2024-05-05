@@ -89,6 +89,7 @@ int main(int argc, char* argv[]) {
         dds_image_free(out_image);
         return 1;
     }
+
     if (swizzle)
         ret = swizDoSwizzle(image->pixels, out_image->pixels, context);
     else
@@ -101,6 +102,7 @@ int main(int argc, char* argv[]) {
         dds_image_free(out_image);
         return 1;
     }
+
     printf("Saving %s...\n", output_filename);
     int saved = dds_save(out_image, output_filename);
     if (!saved) {
