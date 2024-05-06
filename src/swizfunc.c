@@ -139,7 +139,7 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
 
     int dest_index = 0;
     int gobs_per_block = MIN(gob_count_x, 16);
-    for (int i = 0; i < gob_count_y / gobs_per_block; i++) {
+    for (int i = 0; i < CEIL_DIV(gob_count_y, gobs_per_block); i++) {
         for (int x = 0; x < gob_count_x * GOB_BLOCK_COUNT_X_SWITCH; x += GOB_BLOCK_COUNT_X_SWITCH) {
             for (int k = 0; k < gobs_per_block; k++) {
                 int y = (i * gobs_per_block + k) * GOB_BLOCK_COUNT_Y_SWITCH;
@@ -148,11 +148,15 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                      l < &SWIZ_ORDER_SWITCH[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
                     int data_x = x + *l % GOB_BLOCK_COUNT_X_SWITCH;
                     int data_y = y + *l / GOB_BLOCK_COUNT_X_SWITCH;
-                    if (data_x >= block_count_x || data_y >= block_count_y)
-                        continue;
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         pitch, block_data_size);
-                    copy_block_func(data, data_index, new_data, dest_index, block_data_size);
+                    int pitch_remainder = pitch - (data_index % pitch);
+                    if (pitch_remainder < block_data_size) {
+                        // when a block is crossing the right edge of texture
+                        copy_block_func(data, data_index, new_data, dest_index, pitch_remainder);
+                    } else {
+                        copy_block_func(data, data_index, new_data, dest_index, block_data_size);
+                    }
                     dest_index += block_data_size;
                 }
             }
