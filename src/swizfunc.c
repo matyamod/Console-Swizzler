@@ -50,10 +50,11 @@ static int MORTON8x8[64] = {
 #define GOB_BLOCK_COUNT_PS4 64
 
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
-                               int width, int height, int block_width, int block_data_size,
+                               int width, int height,
+                               int block_width, int block_height, int block_data_size,
                                CopyBlockFuncPtr copy_block_func) {
     int block_count_x = CEIL_DIV(width, block_width);
-    int block_count_y = CEIL_DIV(height, block_width);
+    int block_count_y = CEIL_DIV(height, block_height);
     int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
     int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
     int pitch = block_count_x * block_data_size;
@@ -80,15 +81,15 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 }
 
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                 int width, int height, int block_width, int block_data_size) {
+                 int width, int height, int block_width, int block_height, int block_data_size) {
     swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_data_size, copy_block);
+                       block_width, block_height, block_data_size, copy_block);
 }
 
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                   int width, int height, int block_width, int block_data_size) {
+                   int width, int height, int block_width, int block_height, int block_data_size) {
     swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_data_size, copy_block_inverse);
+                       block_width, block_height, block_data_size, copy_block_inverse);
 }
 
 // switch swizzling functions
@@ -120,9 +121,9 @@ static int SWIZ_ORDER_SWITCH[32] = {
 };
 
 static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
-                                  int width, int height, int block_width, int block_data_size,
+                                  int width, int height,
+                                  int block_width, int block_height, int block_data_size,
                                   CopyBlockFuncPtr copy_block_func) {
-    int block_height = block_width;
     int pitch = CEIL_DIV(width, block_width) * block_data_size;
     if (block_data_size > 0 && block_data_size < 16) {
         // expand block_width to make block_data_size equal to 16.
@@ -160,13 +161,13 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
 }
 
 void swizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                 int width, int height, int block_width, int block_data_size) {
+                 int width, int height, int block_width, int block_height, int block_data_size) {
     swiz_func_switch_base(data, new_data, width, height,
-                          block_width, block_data_size, copy_block);
+                          block_width, block_height, block_data_size, copy_block);
 }
 
 void unswizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                   int width, int height, int block_width, int block_data_size) {
+                   int width, int height, int block_width, int block_height, int block_data_size) {
     swiz_func_switch_base(data, new_data, width, height,
-                          block_width, block_data_size, copy_block_inverse);
+                          block_width, block_height, block_data_size, copy_block_inverse);
 }

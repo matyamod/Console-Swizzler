@@ -129,14 +129,19 @@ _SWIZ_EXTERN void swizContextSetHasMips(SwizContext *context, int has_mips);
 /**
  * Sets block size to context.
  *
+ * @note "Block" means a block of compression, not a block of swizzling.\n
+ *       4x4 for all BC formats. 1x1 for all uncompressed formats.
+ *
  * @param context SwizContext instance
- * @param block_width Width of a block (four for BC formats, one for uncompressed formats.)
+ * @param block_width Width of a block
+ * @param block_height Height of a block
  * @param block_data_size Data size of a block
  * @returns Non-zero if it got errors
  * @memberof SwizContext
  */
 _SWIZ_EXTERN SwizError swizContextSetBlockInfo(SwizContext *context,
-                                               int block_width, int block_data_size);
+                                               int block_width, int block_height,
+                                               int block_data_size);
 
 /**
  * Gets error status of context.

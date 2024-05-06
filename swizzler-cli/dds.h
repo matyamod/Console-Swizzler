@@ -94,7 +94,7 @@ typedef struct dds_image* dds_image_t;
 
 dds_image_t dds_load(const char* filename);
 int dds_save(dds_image_t image, const char* filename);
-void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_size);
+void dds_get_block_info(dds_image_t image, int *block_width, int *block_height, int *block_data_size);
 dds_image_t dds_copy(dds_image_t image);
 void dds_image_free(dds_image_t image);
 

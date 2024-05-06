@@ -12,6 +12,7 @@ SwizContext *swizNewContext() {
         context->width = 0;
         context->height = 0;
         context->block_width = 0;
+        context->block_height = 0;
         context->block_data_size = 0;
         context->has_mips = 0;
         context->SwizFunc = NULL;
@@ -60,12 +61,15 @@ void swizContextSetHasMips(SwizContext *context, int has_mips) {
     context->has_mips = has_mips > 0;
 }
 
-SwizError swizContextSetBlockInfo(SwizContext *context, int block_width, int block_data_size) {
+SwizError swizContextSetBlockInfo(SwizContext *context,
+                                  int block_width, int block_height, int block_data_size) {
     context->block_width = block_width;
+    context->block_height = block_height;
     context->block_data_size = block_data_size;
-    if (block_width <= 0 || block_data_size <= 0) {
+    if (block_width <= 0 || block_height <= 0 || block_data_size <= 0) {
         context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
         block_width = 0;
+        block_height = 0;
         block_data_size = 0;
     }
     return context->error;
@@ -75,16 +79,31 @@ SwizError swizContextGetLastError(SwizContext *context) {
     return context->error;
 }
 
+static SwizError swizContextValidate(SwizContext *context) {
+    if (context->platform == SWIZ_PLATFORM_UNK)
+        context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
+
+    if (context->width < 0 || context->height < 0)
+        context->error = SWIZ_ERROR_INVALID_TEXTURE_SIZE;
+
+    if (context->block_width <= 0 || context->block_data_size <= 0)
+        context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
+    return context->error;
+}
+
 uint32_t swizContextGetDataSize(SwizContext *context) {
+    swizContextValidate(context);
     if (context->error != SWIZ_OK)
         return 0;
+
     uint32_t width = context->width;
     uint32_t height = context->height;
     uint32_t block_width = context->block_width;
+    uint32_t block_height = context->block_height;
     uint32_t block_data_size = context->block_data_size;
     uint32_t block_count_x, block_count_y;
     uint32_t data_size = CEIL_DIV(width, block_width)
-                         * CEIL_DIV(height, block_width) * block_data_size;
+                         * CEIL_DIV(height, block_height) * block_data_size;
     if (!context->has_mips)
         return data_size;
 
@@ -92,15 +111,17 @@ uint32_t swizContextGetDataSize(SwizContext *context) {
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
         block_count_x = CEIL_DIV(width, block_width);
-        block_count_y = CEIL_DIV(height, block_width);
+        block_count_y = CEIL_DIV(height, block_height);
         data_size += block_count_x * block_count_y * block_data_size;
     }
     return data_size;
 }
 
 SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
+    swizContextValidate(context);
     if (context->error != SWIZ_OK)
         return context->error;
+
     uint32_t data_size = swizContextGetDataSize(context);
     *new_data_ptr = (uint8_t *)calloc(data_size, sizeof(uint8_t));
     if (*new_data_ptr == NULL)
@@ -110,31 +131,24 @@ SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
 
 static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
                                    SwizContext *context, SwizFuncPtr SwizFunc) {
-    if (context->platform == SWIZ_PLATFORM_UNK)
-        context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
-
-    if (context->width < 0 || context->height < 0)
-        context->error = SWIZ_ERROR_INVALID_TEXTURE_SIZE;
-
-    if (context->block_width <= 0 || context->block_data_size <= 0)
-        context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
-
+    swizContextValidate(context);
     if (context->error != SWIZ_OK)
         return context->error;
 
     uint32_t width = context->width;
     uint32_t height = context->height;
     uint32_t block_width = context->block_width;
+    uint32_t block_height = context->block_height;
     uint32_t block_data_size = context->block_data_size;
     uint32_t block_count_x, block_count_y;
 
-    SwizFunc(data, swizzled, width, height, block_width, block_data_size);
+    SwizFunc(data, swizzled, width, height, block_width, block_height, block_data_size);
 
     if (!context->has_mips)
         return context->error;
 
     uint32_t data_size = CEIL_DIV(width, block_width)
-                         * CEIL_DIV(height, block_width) * block_data_size;
+                         * CEIL_DIV(height, block_height) * block_data_size;
     data += data_size;
     swizzled += data_size;
 
@@ -142,8 +156,9 @@ static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
         block_count_x = CEIL_DIV(width, block_width);
-        block_count_y = CEIL_DIV(height, block_width);
-        SwizFunc(data, swizzled, block_count_x, block_count_y, block_width, block_data_size);
+        block_count_y = CEIL_DIV(height, block_height);
+        SwizFunc(data, swizzled, block_count_x, block_count_y,
+                 block_width, block_height, block_data_size);
         data_size = block_count_x * block_count_y * block_data_size;
         data += data_size;
         swizzled += data_size;

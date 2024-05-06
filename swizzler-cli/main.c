@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
         printf("Platform: ps4\n");
     }
 
-    int width, height, block_width, block_data_size;
+    int width, height, block_width, block_height, block_data_size;
     SwizContext *context;
     SwizError ret;
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
     width = image->header.width;
     height = image->header.height;
-    dds_get_block_info(image, &block_width, &block_data_size);
+    dds_get_block_info(image, &block_width, &block_height, &block_data_size);
 
     if (block_data_size == 0) {
         printf("Unsupported pixel format.");
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     swizContextSetPlatform(context, platform);
     swizContextSetTextureSize(context, width, height);
     swizContextSetHasMips(context, image->header.mipmap_count > 1);
-    swizContextSetBlockInfo(context, block_width, block_data_size);
+    swizContextSetBlockInfo(context, block_width, block_height, block_data_size);
 
     uint32_t data_size = swizContextGetDataSize(context);
     if (image->pixels_size < data_size) {

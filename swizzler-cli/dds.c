@@ -19,8 +19,9 @@ int same_rgba_mask(dds_image_t image,
            && image->header.pixel_format.a_bit_mask == a_bit_mask;
 }
 
-void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_size) {
+void dds_get_block_info(dds_image_t image, int *block_width, int *block_height, int *block_data_size) {
     *block_width = 4;
+    *block_height = 4;
     *block_data_size = 0;
     dds_uint dxgi_format;
     if (image->header.pixel_format.flags & DDPF_FOURCC) {
@@ -74,6 +75,7 @@ void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_siz
             case 85:
             case 86:
                 *block_width = 1;
+                *block_height = 1;
                 *block_data_size = 2;
                 return;
             case 87:
@@ -84,37 +86,112 @@ void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_siz
             case 92:
             case 93:
                 *block_width = 1;
+                *block_height = 1;
                 *block_data_size = 4;
                 return;
             case 133:  // astc 4x4
             case 134:
+            case 135:
                 *block_width = 4;
+                *block_height = 4;
+                *block_data_size = 16;
+                return;
+            case 137:  // astc 5x4
+            case 138:
+            case 139:
+                *block_width = 5;
+                *block_height = 4;
+                *block_data_size = 16;
+                return;
+            case 141:  // astc 5x5
+            case 142:
+            case 143:
+                *block_width = 5;
+                *block_height = 5;
+                *block_data_size = 16;
+                return;
+            case 145:  // astc 6x5
+            case 146:
+            case 147:
+                *block_width = 6;
+                *block_height = 5;
                 *block_data_size = 16;
                 return;
             case 149:  // astc 6x6
             case 150:
+            case 151:
                 *block_width = 6;
+                *block_height = 6;
+                *block_data_size = 16;
+                return;
+            case 153:  // astc 8x5
+            case 154:
+            case 155:
+                *block_width = 8;
+                *block_height = 5;
+                *block_data_size = 16;
+                return;
+            case 157:  // astc 8x6
+            case 158:
+            case 159:
+                *block_width = 8;
+                *block_height = 6;
                 *block_data_size = 16;
                 return;
             case 161:  // astc 8x8
             case 162:
+            case 163:
                 *block_width = 8;
+                *block_height = 8;
+                *block_data_size = 16;
+                return;
+            case 165:  // astc 10x5
+            case 166:
+            case 167:
+                *block_width = 10;
+                *block_height = 5;
+                *block_data_size = 16;
+                return;
+            case 169:  // astc 10x6
+            case 170:
+            case 171:
+                *block_width = 10;
+                *block_height = 6;
+                *block_data_size = 16;
+                return;
+            case 173:  // astc 10x8
+            case 174:
+            case 175:
+                *block_width = 10;
+                *block_height = 8;
                 *block_data_size = 16;
                 return;
             case 177:  // astc 10x10
             case 178:
+            case 179:
                 *block_width = 10;
+                *block_height = 10;
+                *block_data_size = 16;
+                return;
+            case 181:  // astc 12x10
+            case 182:
+            case 183:
+                *block_width = 12;
+                *block_height = 10;
                 *block_data_size = 16;
                 return;
             case 185:  // astc 12x12
             case 186:
+            case 187:
                 *block_width = 12;
+                *block_height = 12;
                 *block_data_size = 16;
                 return;
             default:
                 break;
             }
             *block_width = 1;
+            *block_height = 1;
             if (dxgi_format == 0)
                 *block_data_size = 0;
             else if (dxgi_format <= 4)
@@ -144,6 +221,7 @@ void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_siz
         }
     }
     *block_width = 1;
+    *block_height = 1;
     *block_data_size = image->header.pixel_format.rgb_bit_count / 8;
     return;
 }

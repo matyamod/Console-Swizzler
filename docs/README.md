@@ -23,8 +23,7 @@ Usage: swizzler-cli <command> <input> <output> [<platform>]
         swizzle : swizzles an input dds.
         unswizzle : unswizzles an input dds.
 
-    platform:
-        ps4 : Only PS4 swizzling is supported for now.
+    platform: ps4, switch
 
 Examples:
     swizzler-cli swizzle raw.dds swizzled.dds
@@ -43,7 +42,7 @@ int main() {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);  // PS4 swizzling
     swizContextSetTextureSize(context, 256, 256);  // 256x256 texture
     swizContextSetHasMips(context, 1);  // swizzled_data contains mipmaps
-    swizContextSetBlockInfo(context, 4, 8);  // 4x4 8-byte block
+    swizContextSetBlockInfo(context, 4, 4, 8);  // 4x4 8-byte block
 
     // Get the swizzled pixel data somehow.
     uint8_t *swizzled_data = ...;
