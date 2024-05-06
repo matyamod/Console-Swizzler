@@ -86,6 +86,31 @@ void dds_get_block_info(dds_image_t image, int *block_width, int *block_data_siz
                 *block_width = 1;
                 *block_data_size = 4;
                 return;
+            case 133:  // astc 4x4
+            case 134:
+                *block_width = 4;
+                *block_data_size = 16;
+                return;
+            case 149:  // astc 6x6
+            case 150:
+                *block_width = 6;
+                *block_data_size = 16;
+                return;
+            case 161:  // astc 8x8
+            case 162:
+                *block_width = 8;
+                *block_data_size = 16;
+                return;
+            case 177:  // astc 10x10
+            case 178:
+                *block_width = 10;
+                *block_data_size = 16;
+                return;
+            case 185:  // astc 12x12
+            case 186:
+                *block_width = 12;
+                *block_data_size = 16;
+                return;
             default:
                 break;
             }

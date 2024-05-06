@@ -1,15 +1,9 @@
 #include <string.h>
 #include "swizfunc.h"
 
-#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define CEIL_DIV(X, PAD) (((X) + (PAD) - 1) / (PAD))
 #define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD) * (PAD))
-
-void swizFuncDefault(const uint8_t *data, uint8_t *new_data,
-                     int width, int height, int block_width, int block_data_size) {
-    return;
-}
 
 typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
                                  uint8_t *dest, int dest_index, int block_data_size);
@@ -24,8 +18,8 @@ static void copy_block_inverse(const uint8_t *data, int data_index,
     copy_block(data, dest_index, dest, data_index, block_data_size);
 }
 
-static int block_pos_to_index(int x, int y, int block_count_x, int block_data_size) {
-    return (y * block_count_x + x) * block_data_size;
+static int block_pos_to_index(int x, int y, int pitch, int block_data_size) {
+    return y * pitch + x * block_data_size;
 }
 
 // ps4 swizzling functions
@@ -62,7 +56,9 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
     int block_count_y = CEIL_DIV(height, block_width);
     int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
     int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
+    int pitch = block_count_x * block_data_size;
     int dest_index = 0;
+
 
     for (int y = 0; y < block_count_y_aligned; y += GOB_BLOCK_COUNT_X_PS4) {
         for (int x = 0; x < block_count_x_aligned; x += GOB_BLOCK_COUNT_X_PS4) {
@@ -75,7 +71,7 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                     continue;
                 // copy a block in (data_x, data_y) to new_data
                 int data_index = block_pos_to_index(data_x, data_y,
-                                                    block_count_x, block_data_size);
+                                                    pitch, block_data_size);
                 copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                 dest_index += block_data_size;
             }
@@ -102,35 +98,38 @@ void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
 #define GOB_BLOCK_COUNT_SWITCH 32
 
 /**
- * Morton order for 4x8 matrix but it starts from bottom left.
- * 21 23 29 31
- * 20 22 28 30
- * 17 19 25 27
- * 16 18 24 26
- *  5  7 13 15
- *  4  6 12 14
- *  1  3  9 11
- *  0  2  8 10
+ * Swizzling order for 4x8 matrix.
+ *  0  2 16 18
+ *  1  3 17 19
+ *  4  6 20 22
+ *  5  7 21 23
+ *  8 10 24 26
+ *  9 11 25 27
+ * 12 14 28 30
+ * 13 15 29 31
  */
-static int ROTATED_MORTON4x8[32] = {
-    28, 24, 29, 25,
-    20, 16, 21, 17,
-    12,  8, 13,  9,
-     4,  0,  5,  1,
-    30, 26, 31, 27,
-    22, 18, 23, 19,
-    14, 10, 15, 11,
-     6,  2,  7,  3,
+static int SWIZ_ORDER_SWITCH[32] = {
+     0,  4,  1,  5,
+     8, 12,  9, 13,
+    16, 20, 17, 21,
+    24, 28, 25, 29,
+     2,  6,  3,  7,
+    10, 14, 11, 15,
+    18, 22, 19, 23,
+    26, 30, 27, 31
 };
 
-// https://github.com/nesrak1/UABEA/blob/5adb448deeefa1b88881f1fa44243009b352db3a/TexturePlugin/Texture2DSwitchDeswizzler.cs#L12
-// https://github.com/gildor2/UEViewer/blob/a0bfb468d42be831b126632fd8a0ae6b3614f981/Unreal/UnrealMaterial/UnTexture.cpp#L797
 static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                                   int width, int height, int block_width, int block_data_size,
                                   CopyBlockFuncPtr copy_block_func) {
     int block_height = block_width;
-    //if (block_data_size > 0 && block_data_size < 16)
-        //block_height *= 16 / block_data_size;
+    int pitch = CEIL_DIV(width, block_width) * block_data_size;
+    if (block_data_size > 0 && block_data_size < 16) {
+        // expand block_width to make block_data_size equal to 16.
+        int expand_factor = 16 / block_data_size;
+        block_width *= expand_factor;
+        block_data_size *= expand_factor;
+    }
     int block_count_x = CEIL_DIV(width, block_width);
     int block_count_y = CEIL_DIV(height, block_height);
 
@@ -138,21 +137,20 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
     int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
 
     int dest_index = 0;
-    int gobs_per_block = MIN(CEIL_DIV(width, 8), 16);
-    int max_gob_x = (gob_count_x - 1) * GOB_BLOCK_COUNT_X_SWITCH;
+    int gobs_per_block = MIN(gob_count_x, 16);
     for (int i = 0; i < gob_count_y / gobs_per_block; i++) {
-        for (int x = max_gob_x; x >= 0; x -= GOB_BLOCK_COUNT_X_SWITCH) {
-            for (int k = gobs_per_block - 1; k >= 0; k--) {
+        for (int x = 0; x < gob_count_x * GOB_BLOCK_COUNT_X_SWITCH; x += GOB_BLOCK_COUNT_X_SWITCH) {
+            for (int k = 0; k < gobs_per_block; k++) {
                 int y = (i * gobs_per_block + k) * GOB_BLOCK_COUNT_Y_SWITCH;
                 // swizzles an 4x8 matrix of blocks in morton order.
-                for (int *l = &ROTATED_MORTON4x8[0];
-                     l < &ROTATED_MORTON4x8[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
+                for (int *l = &SWIZ_ORDER_SWITCH[0];
+                     l < &SWIZ_ORDER_SWITCH[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
                     int data_x = x + *l % GOB_BLOCK_COUNT_X_SWITCH;
                     int data_y = y + *l / GOB_BLOCK_COUNT_X_SWITCH;
                     if (data_x >= block_count_x || data_y >= block_count_y)
                         continue;
                     int data_index = block_pos_to_index(data_x, data_y,
-                                                        block_count_x, block_data_size);
+                                                        pitch, block_data_size);
                     copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                     dest_index += block_data_size;
                 }

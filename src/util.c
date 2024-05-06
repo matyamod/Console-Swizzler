@@ -17,7 +17,7 @@ const char* swizGetErrorMessage(SwizError error) {
     case SWIZ_ERROR_INVALID_TEXTURE_SIZE:
         return "Width and height should be non-negative numbers.";
     case SWIZ_ERROR_INVALID_BLOCK_INFO:
-        return "Block width should be positive, and block data size should be non-negative";
+        return "Block width and block data size should be positive.";
     case SWIZ_ERROR_MEMORY_ALLOC:
         return "Memory allocation error.";
     default:

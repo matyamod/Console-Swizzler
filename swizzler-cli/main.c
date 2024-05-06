@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
     width = image->header.width;
     height = image->header.height;
     dds_get_block_info(image, &block_width, &block_data_size);
+
     if (block_data_size == 0) {
         printf("Unsupported pixel format.");
         return 1;

@@ -11,11 +11,11 @@ SwizContext *swizNewContext() {
         context->platform = SWIZ_PLATFORM_UNK;
         context->width = 0;
         context->height = 0;
-        context->block_width = 4;
+        context->block_width = 0;
         context->block_data_size = 0;
         context->has_mips = 0;
-        context->SwizFunc = swizFuncDefault;
-        context->UnswizFunc = swizFuncDefault;
+        context->SwizFunc = NULL;
+        context->UnswizFunc = NULL;
         context->error = SWIZ_OK;
     }
     return context;
@@ -38,8 +38,9 @@ SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
         break;
     default:
         context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
-        context->SwizFunc = swizFuncDefault;
-        context->UnswizFunc = swizFuncDefault;
+        context->platform = SWIZ_PLATFORM_UNK;
+        context->SwizFunc = NULL;
+        context->UnswizFunc = NULL;
     }
     return context->error;
 }
@@ -62,9 +63,9 @@ void swizContextSetHasMips(SwizContext *context, int has_mips) {
 SwizError swizContextSetBlockInfo(SwizContext *context, int block_width, int block_data_size) {
     context->block_width = block_width;
     context->block_data_size = block_data_size;
-    if (block_width <= 0 || block_data_size < 0) {
+    if (block_width <= 0 || block_data_size <= 0) {
         context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
-        block_width = 1;
+        block_width = 0;
         block_data_size = 0;
     }
     return context->error;
@@ -109,8 +110,18 @@ SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
 
 static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
                                    SwizContext *context, SwizFuncPtr SwizFunc) {
+    if (context->platform == SWIZ_PLATFORM_UNK)
+        context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
+
+    if (context->width < 0 || context->height < 0)
+        context->error = SWIZ_ERROR_INVALID_TEXTURE_SIZE;
+
+    if (context->block_width <= 0 || context->block_data_size <= 0)
+        context->error = SWIZ_ERROR_INVALID_BLOCK_INFO;
+
     if (context->error != SWIZ_OK)
         return context->error;
+
     uint32_t width = context->width;
     uint32_t height = context->height;
     uint32_t block_width = context->block_width;
