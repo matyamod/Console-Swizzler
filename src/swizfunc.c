@@ -60,7 +60,6 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
     int pitch = block_count_x * block_data_size;
     int dest_index = 0;
 
-
     for (int y = 0; y < block_count_y_aligned; y += GOB_BLOCK_COUNT_X_PS4) {
         for (int x = 0; x < block_count_x_aligned; x += GOB_BLOCK_COUNT_X_PS4) {
             // swizzles an 8x8 matrix of blocks in morton order.
@@ -70,7 +69,9 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 
                 if (data_x >= block_count_x || data_y >= block_count_y)
                     continue;
-                // copy a block in (data_x, data_y) to new_data
+
+                // copy a block in (data_x, data_y) to new_data,
+                // or copy new_data to (data_x, data_y)
                 int data_index = block_pos_to_index(data_x, data_y,
                                                     pitch, block_data_size);
                 copy_block_func(data, data_index, new_data, dest_index, block_data_size);
@@ -125,12 +126,14 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                                   int block_width, int block_height, int block_data_size,
                                   CopyBlockFuncPtr copy_block_func) {
     int pitch = CEIL_DIV(width, block_width) * block_data_size;
-    if (block_data_size > 0 && block_data_size < 16) {
+
+    if (block_data_size < 16) {
         // expand block_width to make block_data_size equal to 16.
         int expand_factor = 16 / block_data_size;
         block_width *= expand_factor;
         block_data_size *= expand_factor;
     }
+
     int block_count_x = CEIL_DIV(width, block_width);
     int block_count_y = CEIL_DIV(height, block_height);
 
@@ -143,7 +146,8 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
         for (int x = 0; x < gob_count_x * GOB_BLOCK_COUNT_X_SWITCH; x += GOB_BLOCK_COUNT_X_SWITCH) {
             for (int k = 0; k < gobs_per_block; k++) {
                 int y = (i * gobs_per_block + k) * GOB_BLOCK_COUNT_Y_SWITCH;
-                // swizzles an 4x8 matrix of blocks in morton order.
+
+                // swizzles an 4x8 matrix of blocks.
                 for (int *l = &SWIZ_ORDER_SWITCH[0];
                      l < &SWIZ_ORDER_SWITCH[0] + GOB_BLOCK_COUNT_SWITCH; ++l) {
                     int data_x = x + *l % GOB_BLOCK_COUNT_X_SWITCH;
@@ -151,6 +155,9 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         pitch, block_data_size);
                     int pitch_remainder = pitch - (data_index % pitch);
+
+                    // copy a block in (data_x, data_y) to new_data,
+                    // or copy new_data to (data_x, data_y)
                     if (pitch_remainder < block_data_size) {
                         // when a block is crossing the right edge of texture
                         copy_block_func(data, data_index, new_data, dest_index, pitch_remainder);
