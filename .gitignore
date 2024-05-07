@@ -4,6 +4,10 @@ build
 !batch_files/*.bat
 *.dds
 
+# subprojects
+subprojects/*
+!subprojects/gtest.wrap
+
 # doxygen
 *.js
 *.css

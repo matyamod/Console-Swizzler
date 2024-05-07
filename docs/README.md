@@ -93,11 +93,12 @@ int main() {
 ```bash
 meson setup build --buildtype=release
 meson compile -C build
+meson test -C build
 ```
 
 ### Build Library Only
 
 ```bash
-meson setup build --buildtype=release -Dcli=false
+meson setup build --buildtype=release -Dcli=false -Dtests=false
 meson compile -C build
 ```

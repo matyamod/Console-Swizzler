@@ -20,6 +20,8 @@ const char* swizGetErrorMessage(SwizError error) {
         return "Block width, heghit, and data size should be positive.";
     case SWIZ_ERROR_MEMORY_ALLOC:
         return "Memory allocation error.";
+    case SWIZ_ERROR_NULL_POINTER:
+        return "De-referencing a null pointer.";
     default:
         return "Unexpected error.";
     }

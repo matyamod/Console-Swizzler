@@ -18,8 +18,8 @@ extern "C" {
 #define _SWIZ_ENUM(s) typedef unsigned int s; enum
 
 // Version info
-#define SWIZ_VERSION "0.3.0"
-#define SWIZ_VERSION_INT 300
+#define SWIZ_VERSION "0.3.1"
+#define SWIZ_VERSION_INT 301
 
 /**
  * Gets the version of console-swizzler.
@@ -49,6 +49,7 @@ _SWIZ_ENUM(SwizError) {
     SWIZ_ERROR_INVALID_TEXTURE_SIZE,
     SWIZ_ERROR_INVALID_BLOCK_INFO,
     SWIZ_ERROR_MEMORY_ALLOC,
+    SWIZ_ERROR_NULL_POINTER,
     SWIZ_ERROR_MAX,
 };
 
@@ -95,6 +96,16 @@ _SWIZ_EXTERN SwizContext *swizNewContext();
  * @memberof SwizContext
  */
 _SWIZ_EXTERN void swizFreeContext(SwizContext *context);
+
+/**
+ * Initialize attributes of a context.
+ *
+ * @note swizNewContext() calls this function internally.
+ *
+ * @param context The context to initialize
+ * @memberof SwizContext
+ */
+_SWIZ_EXTERN void swizContextInit(SwizContext *context);
 
 /**
  * Sets platform information to context.

@@ -7,6 +7,15 @@
 
 SwizContext *swizNewContext() {
     SwizContext *context = (SwizContext *)malloc(sizeof(SwizContext));
+    swizContextInit(context);
+    return context;
+}
+
+void swizFreeContext(SwizContext *context) {
+    free(context);
+}
+
+void swizContextInit(SwizContext *context) {
     if (context != NULL) {
         context->platform = SWIZ_PLATFORM_UNK;
         context->width = 0;
@@ -19,11 +28,6 @@ SwizContext *swizNewContext() {
         context->UnswizFunc = NULL;
         context->error = SWIZ_OK;
     }
-    return context;
-}
-
-void swizFreeContext(SwizContext *context) {
-    free(context);
 }
 
 SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
@@ -98,7 +102,7 @@ static int log2(int n) {
 }
 
 static int count_mips(int width, int height) {
-    return MAX(log2(width), log2(height));
+    return MAX(log2(width), log2(height)) + 1;
 }
 
 static uint32_t get_data_size_base(SwizContext *context) {
@@ -133,8 +137,10 @@ uint32_t swizContextGetDataSize(SwizContext *context) {
 
 SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
     swizContextValidate(context);
-    if (context->error != SWIZ_OK)
+    if (context->error != SWIZ_OK) {
+        *new_data_ptr = NULL;
         return context->error;
+    }
 
     uint32_t data_size = get_data_size_base(context);
     *new_data_ptr = (uint8_t *)calloc(data_size, sizeof(uint8_t));
@@ -146,6 +152,10 @@ SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
 static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
                                    SwizContext *context, SwizFuncPtr SwizFunc) {
     swizContextValidate(context);
+
+    if (data == NULL || swizzled == NULL)
+        context->error = SWIZ_ERROR_NULL_POINTER;
+
     if (context->error != SWIZ_OK)
         return context->error;
 

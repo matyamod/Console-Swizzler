@@ -162,11 +162,13 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                     }
 
                     // We need to resize the block when it crosses the right edge of texture.
-                    int block_data_size_rounded = MIN(pitch - (data_index % pitch), block_data_size);
+                    int block_data_size_rounded = MIN(pitch - (data_index % pitch),
+                                                      block_data_size);
 
                     // copy a block at (data_x, data_y) to dest_index,
                     // or copy a block at dest_index to (data_x, data_y)
-                    copy_block_func(data, data_index, new_data, dest_index, block_data_size_rounded);
+                    copy_block_func(data, data_index,
+                                    new_data, dest_index, block_data_size_rounded);
                     dest_index += block_data_size;
                 }
             }

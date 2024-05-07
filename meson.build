@@ -31,3 +31,15 @@ if get_option('cli')
         dependencies: console_swizzler_dep,
         install : true)
 endif
+
+if get_option('tests')
+    add_languages('cpp', required: true)
+
+    # get gtest
+    gtest_proj = subproject('gtest')
+    gtest_dep = gtest_proj.get_variable('gtest_dep')
+    gmock_dep = gtest_proj.get_variable('gmock_dep')
+
+    # build tests
+    subdir('tests')
+endif
