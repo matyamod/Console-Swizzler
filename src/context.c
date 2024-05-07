@@ -91,24 +91,34 @@ static SwizError swizContextValidate(SwizContext *context) {
     return context->error;
 }
 
+static int log2(int n) {
+    int ret = 0;
+    while (n >>= 1) ++ret;
+    return ret;
+}
+
+static int count_mips(int width, int height) {
+    return MAX(log2(width), log2(height));
+}
+
 static uint32_t get_data_size_base(SwizContext *context) {
     uint32_t width = context->width;
     uint32_t height = context->height;
     uint32_t block_width = context->block_width;
     uint32_t block_height = context->block_height;
     uint32_t block_data_size = context->block_data_size;
-    uint32_t block_count_x, block_count_y;
-    uint32_t data_size = CEIL_DIV(width, block_width)
-                         * CEIL_DIV(height, block_height) * block_data_size;
-    if (!context->has_mips)
-        return data_size;
 
-    while (width > 1 || height > 1) {
+    uint32_t mip_count = 1;
+    if (context->has_mips)
+        mip_count = count_mips(width, height);
+
+    uint32_t data_size = 0;
+    for (int i = 0; i < mip_count; i++) {
+        uint32_t block_count_x = CEIL_DIV(width, block_width);
+        uint32_t block_count_y = CEIL_DIV(height, block_height);
+        data_size += block_count_x * block_count_y * block_data_size;
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
-        block_count_x = CEIL_DIV(width, block_width);
-        block_count_y = CEIL_DIV(height, block_height);
-        data_size += block_count_x * block_count_y * block_data_size;
     }
     return data_size;
 }
@@ -144,28 +154,21 @@ static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
     uint32_t block_width = context->block_width;
     uint32_t block_height = context->block_height;
     uint32_t block_data_size = context->block_data_size;
-    uint32_t block_count_x, block_count_y;
 
-    SwizFunc(data, swizzled, width, height, block_width, block_height, block_data_size);
+    uint32_t mip_count = 1;
+    if (context->has_mips)
+        mip_count = count_mips(width, height);
 
-    if (!context->has_mips)
-        return context->error;
-
-    uint32_t data_size = CEIL_DIV(width, block_width)
-                         * CEIL_DIV(height, block_height) * block_data_size;
-    data += data_size;
-    swizzled += data_size;
-
-    while (width > 1 || height > 1) {
-        width = MAX(1, width / 2);
-        height = MAX(1, height / 2);
-        block_count_x = CEIL_DIV(width, block_width);
-        block_count_y = CEIL_DIV(height, block_height);
-        SwizFunc(data, swizzled, block_count_x, block_count_y,
+    for (int i = 0; i < mip_count; i++) {
+        SwizFunc(data, swizzled, width, height,
                  block_width, block_height, block_data_size);
-        data_size = block_count_x * block_count_y * block_data_size;
+        uint32_t block_count_x = CEIL_DIV(width, block_width);
+        uint32_t block_count_y = CEIL_DIV(height, block_height);
+        uint32_t data_size = block_count_x * block_count_y * block_data_size;
         data += data_size;
         swizzled += data_size;
+        width = MAX(1, width / 2);
+        height = MAX(1, height / 2);
     }
     return context->error;
 }
