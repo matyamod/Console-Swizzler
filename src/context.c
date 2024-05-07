@@ -91,11 +91,7 @@ static SwizError swizContextValidate(SwizContext *context) {
     return context->error;
 }
 
-uint32_t swizContextGetDataSize(SwizContext *context) {
-    swizContextValidate(context);
-    if (context->error != SWIZ_OK)
-        return 0;
-
+static uint32_t get_data_size_base(SwizContext *context) {
     uint32_t width = context->width;
     uint32_t height = context->height;
     uint32_t block_width = context->block_width;
@@ -117,12 +113,20 @@ uint32_t swizContextGetDataSize(SwizContext *context) {
     return data_size;
 }
 
+uint32_t swizContextGetDataSize(SwizContext *context) {
+    swizContextValidate(context);
+    if (context->error != SWIZ_OK)
+        return 0;
+
+    return get_data_size_base(context);
+}
+
 SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
     swizContextValidate(context);
     if (context->error != SWIZ_OK)
         return context->error;
 
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = get_data_size_base(context);
     *new_data_ptr = (uint8_t *)calloc(data_size, sizeof(uint8_t));
     if (*new_data_ptr == NULL)
         context->error = SWIZ_ERROR_MEMORY_ALLOC;

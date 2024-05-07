@@ -15,7 +15,7 @@ static void copy_block(const uint8_t *data, int data_index,
 
 static void copy_block_inverse(const uint8_t *data, int data_index,
                                uint8_t *dest, int dest_index, int block_data_size) {
-    copy_block(data, dest_index, dest, data_index, block_data_size);
+    memcpy(dest + data_index, data + dest_index, block_data_size);
 }
 
 static int block_pos_to_index(int x, int y, int pitch, int block_data_size) {
