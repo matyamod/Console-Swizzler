@@ -5,6 +5,29 @@
 #define CEIL_DIV(X, PAD) (((X) + (PAD) - 1) / (PAD))
 #define ALIGN(X, PAD) (((X) + (PAD) - 1) / (PAD) * (PAD))
 
+#ifdef SWIZ_DEBUG
+#include <stdio.h>
+#define CHECK_MEMORY_INDEX_ON_DEBUG(data_index, dest_index, max_index, data_size) \
+    if (data_index + data_size > max_index) {\
+        fprintf(stderr, \
+                "DEBUG ERROR: %s:%d:\n"\
+                "             'data_index + data_size' is outside the memory.\n"\
+                "             (data_index: %d, data_size: %d)\n", \
+                __FILE__, __LINE__, data_index, data_size);\
+        return;\
+    }\
+    if (dest_index + data_size > max_index) {\
+        fprintf(stderr, \
+                "DEBUG ERROR: %s:%d:\n"\
+                "             'dest_index + data_size' is outside the memory.\n"\
+                "             (deta_index: %d, data_size: %d)\n", \
+                __FILE__, __LINE__, dest_index, data_size);\
+        return;\
+    }
+#else
+#define CHECK_MEMORY_INDEX_ON_DEBUG(data_index, dest_index, max_index, data_size)
+#endif
+
 typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
                                  uint8_t *dest, int dest_index, int block_data_size);
 
@@ -58,8 +81,11 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
     int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
     int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
     int pitch = block_count_x * block_data_size;
-    int dest_index = 0;
+#ifdef SWIZ_DEBUG
+    int max_index = pitch * block_count_y;
+#endif
 
+    int dest_index = 0;
     for (int y = 0; y < block_count_y_aligned; y += GOB_BLOCK_COUNT_X_PS4) {
         for (int x = 0; x < block_count_x_aligned; x += GOB_BLOCK_COUNT_X_PS4) {
             // swizzles an 8x8 matrix of blocks in morton order.
@@ -74,6 +100,10 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                 // or copy a block at dest_index to (data_x, data_y)
                 int data_index = block_pos_to_index(data_x, data_y,
                                                     pitch, block_data_size);
+
+                // Check access violation in debug build.
+                CHECK_MEMORY_INDEX_ON_DEBUG(data_index, dest_index, max_index, block_data_size)
+
                 copy_block_func(data, data_index, new_data, dest_index, block_data_size);
                 dest_index += block_data_size;
             }
@@ -156,15 +186,16 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         pitch, block_data_size);
 
-                    if (data_index >= max_index) {
-                        // when the block is outside the texture.
-                        dest_index += block_data_size;
+                    if (data_x >= block_count_x || data_y >= block_count_y)
                         continue;
-                    }
 
                     // We need to resize the block when it crosses the right edge of texture.
                     int block_data_size_rounded = MIN(pitch - (data_index % pitch),
                                                       block_data_size);
+
+                    // Check access violation in debug build.
+                    CHECK_MEMORY_INDEX_ON_DEBUG(data_index, dest_index,
+                                                max_index, block_data_size_rounded)
 
                     // copy a block at (data_x, data_y) to dest_index,
                     // or copy a block at dest_index to (data_x, data_y)

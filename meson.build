@@ -27,6 +27,10 @@ if host_machine.system() == 'darwin' and not meson.is_subproject()
     endif
 endif
 
+if get_option('buildtype') == 'debug'
+  add_global_arguments('-DSWIZ_DEBUG', language : 'c')
+endif
+
 # Build the library
 swiz_sources = [
     'src/context.c',
