@@ -95,14 +95,14 @@ static SwizError swizContextValidate(SwizContext *context) {
     return context->error;
 }
 
-static int log2(int n) {
+static int log2_int(int n) {
     int ret = 0;
     while (n >>= 1) ++ret;
     return ret;
 }
 
 static int count_mips(int width, int height) {
-    return MAX(log2(width), log2(height)) + 1;
+    return MAX(log2_int(width), log2_int(height)) + 1;
 }
 
 static uint32_t get_data_size_base(SwizContext *context) {

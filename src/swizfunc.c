@@ -155,6 +155,7 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                     int data_y = y + *l / GOB_BLOCK_COUNT_X_SWITCH;
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         pitch, block_data_size);
+
                     if (data_index >= max_index) {
                         // when the block is outside the texture.
                         dest_index += block_data_size;

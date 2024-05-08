@@ -2,6 +2,7 @@ build
 *.exe
 *.bat
 !batch_files/*.bat
+*.sh
 *.dds
 
 # subprojects

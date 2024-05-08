@@ -1,2 +1,4 @@
 option('cli', type : 'boolean', value : true, description : 'Build swizzler-cli or not')
 option('tests', type : 'boolean', value : true, description : 'Build tests')
+option('macosx_version_min', type : 'string', value : '10.15',
+       description : 'Deployment target for macOS.')
