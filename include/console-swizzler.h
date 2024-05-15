@@ -18,8 +18,8 @@ extern "C" {
 #define _SWIZ_ENUM(s) typedef unsigned int s; enum
 
 // Version info
-#define SWIZ_VERSION "0.3.1"
-#define SWIZ_VERSION_INT 301
+#define SWIZ_VERSION "0.4.0"
+#define SWIZ_VERSION_INT 400
 
 /**
  * Gets the version of console-swizzler.
@@ -164,33 +164,54 @@ _SWIZ_EXTERN SwizError swizContextSetBlockInfo(SwizContext *context,
 _SWIZ_EXTERN SwizError swizContextGetLastError(SwizContext *context);
 
 /**
- * Gets binary size of pixel data including mipmaps.
+ * Gets binary size of swizzled data.
+ *
+ * @note It's equal to swizGetUnswizzledSize() on PS4.
  *
  * @param context SwizContext instance
- * @returns Binary size of pixel data
+ * @returns Binary size of swizzled data
  * @memberof SwizContext
  */
-_SWIZ_EXTERN uint32_t swizContextGetDataSize(SwizContext *context);
-
+_SWIZ_EXTERN uint32_t swizGetSwizzledSize(SwizContext *context);
 
 /**
- * Allocates a texture buffer for swizzling.
- *
- * @note Allocated data should be freed with free().
+ * Gets binary size of unswizzled data.
  *
  * @param context SwizContext instance
- * @param new_data_ptr A pointer for allocated data.\n
- *                     The size of *new_data_ptr will be equal to swizContextGetDataSize().
- * @returns Non-zero if it got errors
+ * @returns Binary size of unswizzled data
  * @memberof SwizContext
  */
-_SWIZ_EXTERN SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr);
+_SWIZ_EXTERN uint32_t swizGetUnswizzledSize(SwizContext *context);
+
+/**
+ * Allocates a buffer for swizzled data.
+ *
+ * @note Allocated data should be freed with free().
+ * @note The size of allocated data should be equal to swizGetSwizzledSize()
+ *
+ * @param context SwizContext instance
+ * @returns A pointer for allocated data. Null if it got errors
+ * @memberof SwizContext
+ */
+_SWIZ_EXTERN uint8_t *swizAllocSwizzledData(SwizContext *context);
+
+/**
+ * Allocates a buffer for unswizzled data.
+ *
+ * @note Allocated data should be freed with free().
+ * @note The size of allocated data should be equal to swizGetUnswizzledSize()
+ *
+ * @param context SwizContext instance
+ * @returns A pointer for allocated data. Null if it got errors
+ * @memberof SwizContext
+ */
+_SWIZ_EXTERN uint8_t *swizAllocUnswizzledData(SwizContext *context);
 
 /**
  * Swizzles a texture.
  *
- * @param data Unswizzled data. Data size should be equal to swizContextGetDataSize().
- * @param swizzled Swizzled data. Data size should be equal to swizContextGetDataSize().
+ * @param data Unswizzled data. Data size should be equal to swizGetUnswizzledSize().
+ * @param swizzled Swizzled data. Data size should be equal to swizGetSwizzledSize().
  * @param context SwizContext instance
  * @returns Non-zero if it got errors
  * @memberof SwizContext
@@ -200,8 +221,8 @@ _SWIZ_EXTERN SwizError swizDoSwizzle(const uint8_t *data, uint8_t *swizzled, Swi
 /**
  * Unswizzles a texture.
  *
- * @param data Swizzled data. Data size should be equal to swizContextGetDataSize().
- * @param unswizzled Unswizzled data. Data size should be equal to swizContextGetDataSize().
+ * @param data Swizzled data. Data size should be equal to swizGetSwizzledSize().
+ * @param unswizzled Unswizzled data. Data size should be equal to swizGetUnswizzledSize().
  * @param context SwizContext instance
  * @returns Non-zero if it got errors
  * @memberof SwizContext

@@ -12,6 +12,12 @@ typedef void (*SwizFuncPtr)(const uint8_t *data, uint8_t *new_data,
                             int width, int height,
                             int block_width, int block_height, int block_data_size);
 
+typedef void (*GetSwizzleBlockSizeFuncPtr)(int *block_width, int *block_height,
+                                           int *block_data_size);
+
+typedef void (*GetPaddedSizeFuncPtr)(int *width, int *height,
+                                     int block_width, int block_height);
+
 struct SwizContext {
     SwizPlatform platform;
     int width;
@@ -22,6 +28,8 @@ struct SwizContext {
     int has_mips;
     SwizFuncPtr SwizFunc;
     SwizFuncPtr UnswizFunc;
+    GetSwizzleBlockSizeFuncPtr GetSwizzleBlockSizeFunc;
+    GetPaddedSizeFuncPtr GetPaddedSizeFunc;
     SwizError error;
 };
 

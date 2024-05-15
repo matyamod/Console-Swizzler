@@ -26,6 +26,8 @@ void swizContextInit(SwizContext *context) {
         context->has_mips = 0;
         context->SwizFunc = NULL;
         context->UnswizFunc = NULL;
+        context->GetSwizzleBlockSizeFunc = NULL;
+        context->GetPaddedSizeFunc = NULL;
         context->error = SWIZ_OK;
     }
 }
@@ -36,16 +38,22 @@ SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
     case SWIZ_PLATFORM_PS4:
         context->SwizFunc = swizFuncPS4;
         context->UnswizFunc = unswizFuncPS4;
+        context->GetSwizzleBlockSizeFunc = getSwizzleBlockSizeDefault;
+        context->GetPaddedSizeFunc = getPaddedSizeDefault;
         break;
     case SWIZ_PLATFORM_SWITCH:
         context->SwizFunc = swizFuncSwitch;
         context->UnswizFunc = unswizFuncSwitch;
+        context->GetSwizzleBlockSizeFunc = getSwizzleBlockSizeSwitch;
+        context->GetPaddedSizeFunc = getPaddedSizeSwitch;
         break;
     default:
         context->error = SWIZ_ERROR_UNKNOWN_PLATFORM;
         context->platform = SWIZ_PLATFORM_UNK;
         context->SwizFunc = NULL;
         context->UnswizFunc = NULL;
+        context->GetSwizzleBlockSizeFunc = NULL;
+        context->GetPaddedSizeFunc = NULL;
     }
     return context->error;
 }
@@ -105,88 +113,206 @@ static int count_mips(int width, int height) {
     return MAX(log2_int(width), log2_int(height)) + 1;
 }
 
-static uint32_t get_data_size_base(SwizContext *context) {
-    uint32_t width = context->width;
-    uint32_t height = context->height;
-    uint32_t block_width = context->block_width;
-    uint32_t block_height = context->block_height;
-    uint32_t block_data_size = context->block_data_size;
+static uint32_t get_mip_data_size(int width, int height,
+                                  int block_width, int block_height,
+                                  int block_data_size) {
+    uint32_t block_count_x = CEIL_DIV(width, block_width);
+    uint32_t block_count_y = CEIL_DIV(height, block_height);
+    return block_count_x * block_count_y * block_data_size;
+}
 
-    uint32_t mip_count = 1;
+static uint32_t get_data_size_base(SwizContext *context, int swizzle) {
+    int width = context->width;
+    int height = context->height;
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_data_size = context->block_data_size;
+
+    GetSwizzleBlockSizeFuncPtr GetSwizzleBlockSizeFunc;
+    GetPaddedSizeFuncPtr GetPaddedSizeFunc;
+    if (swizzle) {
+        GetSwizzleBlockSizeFunc = context->GetSwizzleBlockSizeFunc;
+        GetPaddedSizeFunc = context->GetPaddedSizeFunc;
+    } else {
+        GetSwizzleBlockSizeFunc = getSwizzleBlockSizeDefault;
+        GetPaddedSizeFunc = getPaddedSizeDefault;
+    }
+
+    // Swizzling blocks are not the same as compression blocks on some platforms.
+    // So, we need to update these parameters here.
+    GetSwizzleBlockSizeFunc(&block_width, &block_height, &block_data_size);
+
+    int mip_count = 1;
     if (context->has_mips)
         mip_count = count_mips(width, height);
 
     uint32_t data_size = 0;
     for (int i = 0; i < mip_count; i++) {
-        uint32_t block_count_x = CEIL_DIV(width, block_width);
-        uint32_t block_count_y = CEIL_DIV(height, block_height);
-        data_size += block_count_x * block_count_y * block_data_size;
+        int padded_width = width;
+        int padded_height = height;
+        // some platforms requires padding. so, we need to resize mipmaps here.
+        GetPaddedSizeFunc(&padded_width, &padded_height, block_width, block_height);
+        data_size += get_mip_data_size(padded_width, padded_height,
+                                       block_width, block_height,
+                                       block_data_size);
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
     }
     return data_size;
 }
 
-uint32_t swizContextGetDataSize(SwizContext *context) {
+uint32_t swizGetSwizzledSize(SwizContext *context) {
     swizContextValidate(context);
     if (context->error != SWIZ_OK)
         return 0;
 
-    return get_data_size_base(context);
+    return get_data_size_base(context, 1);
 }
 
-SwizError swizContextAllocData(SwizContext *context, uint8_t **new_data_ptr) {
+uint32_t swizGetUnswizzledSize(SwizContext *context) {
     swizContextValidate(context);
-    if (context->error != SWIZ_OK) {
-        *new_data_ptr = NULL;
-        return context->error;
-    }
+    if (context->error != SWIZ_OK)
+        return 0;
 
-    uint32_t data_size = get_data_size_base(context);
-    *new_data_ptr = (uint8_t *)calloc(data_size, sizeof(uint8_t));
-    if (*new_data_ptr == NULL)
+    return get_data_size_base(context, 0);
+}
+
+static uint8_t *alloc_data_base(SwizContext *context, int swizzle) {
+    uint32_t data_size = get_data_size_base(context, swizzle);
+    uint8_t *data = (uint8_t *)calloc(data_size, sizeof(uint8_t));
+    if (data == NULL)
         context->error = SWIZ_ERROR_MEMORY_ALLOC;
-    return context->error;
+    return data;
 }
 
-static SwizError swizDoSwizzleBase(const uint8_t *data, uint8_t *swizzled,
-                                   SwizContext *context, SwizFuncPtr SwizFunc) {
+uint8_t *swizAllocSwizzledData(SwizContext *context) {
     swizContextValidate(context);
+    if (context->error != SWIZ_OK)
+        return NULL;
 
-    if (data == NULL || swizzled == NULL)
-        context->error = SWIZ_ERROR_NULL_POINTER;
+    return alloc_data_base(context, 1);
+}
+
+uint8_t *swizAllocUnswizzledData(SwizContext *context) {
+    swizContextValidate(context);
+    if (context->error != SWIZ_OK)
+        return NULL;
+
+    return alloc_data_base(context, 0);
+}
+
+static void copy_unswizzled_to_padded_buffer(uint8_t *unswizzled, uint8_t *padded,
+                                             int pitch, int padded_pitch,
+                                             int block_count_y, int inverse) {
+    for (int i = 0; i < block_count_y; i++) {
+        if (inverse) {
+            // copy from padded to unswizzled
+            memcpy(unswizzled, padded, pitch);
+        } else {
+            memcpy(padded, unswizzled, pitch);
+        }
+        unswizzled += pitch;
+        padded += padded_pitch;
+    }
+}
+
+static SwizError do_swizzle_base(const uint8_t *src, uint8_t *dst,
+                                 SwizContext *context, int swizzle) {
+    swizContextValidate(context);
 
     if (context->error != SWIZ_OK)
         return context->error;
 
-    uint32_t width = context->width;
-    uint32_t height = context->height;
-    uint32_t block_width = context->block_width;
-    uint32_t block_height = context->block_height;
-    uint32_t block_data_size = context->block_data_size;
+    if (src == NULL || dst == NULL) {
+        context->error = SWIZ_ERROR_NULL_POINTER;
+        return context->error;
+    }
 
-    uint32_t mip_count = 1;
+    int width = context->width;
+    int height = context->height;
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_data_size = context->block_data_size;
+    GetSwizzleBlockSizeFuncPtr GetSwizzleBlockSizeFunc = context->GetSwizzleBlockSizeFunc;
+    GetPaddedSizeFuncPtr GetPaddedSizeFunc = context->GetPaddedSizeFunc;
+
+    SwizFuncPtr SwizFunc;
+    uint8_t* temp_buffer;
+    uint8_t *temp_src;
+    uint8_t *temp_dst;
+    temp_buffer = alloc_data_base(context, 1);
+    if (swizzle) {
+        SwizFunc = context->SwizFunc;
+        temp_src = temp_buffer;
+        temp_dst = dst;
+    } else {
+        SwizFunc = context->UnswizFunc;
+        temp_src = src;
+        temp_dst = temp_buffer;
+    }
+
+    if (context->error != SWIZ_OK)
+        return context->error;
+
+    // Swizzling blocks are not the same as compression blocks on some platforms.
+    // So, we need to update these parameters here.
+    int swizzle_block_width = block_width;
+    int swizzle_block_height = block_height;
+    int swizzle_block_data_size = block_data_size;
+    GetSwizzleBlockSizeFunc(&swizzle_block_width, &swizzle_block_height, &swizzle_block_data_size);
+
+    int mip_count = 1;
     if (context->has_mips)
         mip_count = count_mips(width, height);
 
     for (int i = 0; i < mip_count; i++) {
-        SwizFunc(data, swizzled, width, height,
-                 block_width, block_height, block_data_size);
-        uint32_t block_count_x = CEIL_DIV(width, block_width);
-        uint32_t block_count_y = CEIL_DIV(height, block_height);
-        uint32_t data_size = block_count_x * block_count_y * block_data_size;
-        data += data_size;
-        swizzled += data_size;
+        // some platforms requires padding. so, we need to resize mipmaps here.
+        int padded_width = width;
+        int padded_height = height;
+        GetPaddedSizeFunc(&padded_width, &padded_height, swizzle_block_width, swizzle_block_height);
+
+        int pitch = CEIL_DIV(width, block_width) * block_data_size;
+        int padded_pitch = padded_width / swizzle_block_width * swizzle_block_data_size;
+        int block_count_y = CEIL_DIV(height, block_height);
+        // data size of an unswizzled mipmap.
+        uint32_t data_size = get_mip_data_size(width, height,
+                                               block_width, block_height,
+                                               block_data_size);
+
+        if (swizzle) {
+            // copy unswizzled data from src to padded buffer.
+            copy_unswizzled_to_padded_buffer(src, temp_src, pitch, padded_pitch, block_count_y, 0);
+            src += data_size;
+        }
+
+        // Do swizzling for a mipmap
+        SwizFunc(temp_src, temp_dst, padded_width, padded_height,
+                 swizzle_block_width, swizzle_block_height, swizzle_block_data_size);
+        // data size of a swizzled mipmap.
+        uint32_t padded_data_size = get_mip_data_size(padded_width, padded_height,
+                                                      swizzle_block_width, swizzle_block_height,
+                                                      swizzle_block_data_size);
+        if (!swizzle) {
+            // copy unswizzled data from padded buffer to dst.
+            copy_unswizzled_to_padded_buffer(dst, temp_dst, pitch, padded_pitch, block_count_y, 1);
+            dst += data_size;
+        }
+
+        temp_src += padded_data_size;
+        temp_dst += padded_data_size;
+
         width = MAX(1, width / 2);
         height = MAX(1, height / 2);
     }
+
+    free(temp_buffer);
     return context->error;
 }
 
 SwizError swizDoSwizzle(const uint8_t *data, uint8_t *swizzled, SwizContext *context) {
-    return swizDoSwizzleBase(data, swizzled, context, context->SwizFunc);
+    return do_swizzle_base(data, swizzled, context, 1);
 }
 
 SwizError swizDoUnswizzle(const uint8_t *data, uint8_t *unswizzled, SwizContext *context) {
-    return swizDoSwizzleBase(data, unswizzled, context, context->UnswizFunc);
+    return do_swizzle_base(data, unswizzled, context, 0);
 }

@@ -82,7 +82,18 @@ int main(int argc, char* argv[]) {
     swizContextSetHasMips(context, image->header.mipmap_count > 1);
     swizContextSetBlockInfo(context, block_width, block_height, block_data_size);
 
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size;
+    uint8_t *new_data;
+    uint32_t new_data_size;
+    if (swizzle) {
+        data_size = swizGetUnswizzledSize(context);
+        new_data = swizAllocSwizzledData(context);
+        new_data_size = swizGetSwizzledSize(context);
+    } else {
+        data_size = swizGetSwizzledSize(context);
+        new_data = swizAllocUnswizzledData(context);
+        new_data_size = swizGetUnswizzledSize(context);
+    }
     if (image->pixels_size < data_size) {
         printf("Failed to calculate data size.");
         swizFreeContext(context);
@@ -91,10 +102,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if (new_data == NULL) {
+        printf("Memory allocation error.");
+        swizFreeContext(context);
+        dds_image_free(image);
+        dds_image_free(out_image);
+        return 1;
+    }
+
     if (swizzle)
-        ret = swizDoSwizzle(image->pixels, out_image->pixels, context);
+        ret = swizDoSwizzle(image->pixels, new_data, context);
     else
-        ret = swizDoUnswizzle(image->pixels, out_image->pixels, context);
+        ret = swizDoUnswizzle(image->pixels, new_data, context);
+    free(out_image->pixels);
+    out_image->pixels = new_data;
+    out_image->pixels_size = new_data_size;
+
     swizFreeContext(context);
     dds_image_free(image);
 

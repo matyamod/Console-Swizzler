@@ -65,66 +65,64 @@ TEST_F(ContextTest, swizContextSetBlockInfo) {
     }
 }
 
-TEST_F(ContextTest, swizContextGetDataSize) {
+TEST_F(ContextTest, swizGetUnswizzledSize) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 128, 128);
     swizContextSetBlockInfo(context, 4, 4, 8);
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = swizGetUnswizzledSize(context);
     ASSERT_EQ(32 * 32 * 8, data_size);
 }
 
-TEST_F(ContextTest, swizContextGetDataSizeMips) {
+TEST_F(ContextTest, swizGetUnswizzledSizeMips) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 128, 128);
     swizContextSetHasMips(context, 1);
     swizContextSetBlockInfo(context, 4, 4, 16);
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = swizGetUnswizzledSize(context);
     ASSERT_EQ((32 * 32 + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2 + 3) * 16, data_size);
 }
 
-TEST_F(ContextTest, swizContextGetDataSizeNonPower) {
+TEST_F(ContextTest, swizGetUnswizzledSizeNonPower) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 200, 100);
     swizContextSetHasMips(context, 1);
     swizContextSetBlockInfo(context, 4, 4, 8);
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = swizGetUnswizzledSize(context);
     ASSERT_EQ(13576, data_size);
 }
 
-TEST_F(ContextTest, swizContextGetDataSizeUncompressed) {
+TEST_F(ContextTest, swizGetUnswizzledSizeUncompressed) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
     swizContextSetTextureSize(context, 100, 200);
     swizContextSetHasMips(context, 1);
     swizContextSetBlockInfo(context, 1, 1, 4);
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = swizGetUnswizzledSize(context);
     ASSERT_EQ(106576, data_size);
 }
 
-TEST_F(ContextTest, swizContextGetDataSizeError) {
+TEST_F(ContextTest, swizGetUnswizzledSizeError) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_UNK);
     swizContextSetTextureSize(context, 100, 200);
     swizContextSetHasMips(context, 1);
     swizContextSetBlockInfo(context, 1, 1, 4);
-    uint32_t data_size = swizContextGetDataSize(context);
+    uint32_t data_size = swizGetUnswizzledSize(context);
     ASSERT_EQ(0, data_size);
 }
 
-TEST_F(ContextTest, swizContextAllocData) {
+TEST_F(ContextTest, swizAllocUnswizzledData) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 128, 128);
     swizContextSetBlockInfo(context, 4, 4, 8);
-    uint8_t *data;
-    SwizError ret = swizContextAllocData(context, &data);
+    uint8_t *data = swizAllocUnswizzledData(context);
     ASSERT_NE(nullptr, data);
-    ASSERT_EQ(SWIZ_OK, ret);
+    ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
     free(data);
 }
 
-TEST_F(ContextTest, swizContextAllocDataError) {
+TEST_F(ContextTest, swizAllocUnswizzledDataError) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 128, 128);
-    uint8_t *data;
-    SwizError ret = swizContextAllocData(context, &data);
+    uint8_t *data = swizAllocUnswizzledData(context);
     ASSERT_EQ(nullptr, data);
-    ASSERT_EQ(SWIZ_ERROR_INVALID_BLOCK_INFO, ret);
+    ASSERT_EQ(SWIZ_ERROR_INVALID_BLOCK_INFO, swizContextGetLastError(context));
 }

@@ -8,6 +8,12 @@
 extern "C" {
 #endif
 
+void getSwizzleBlockSizeDefault(int *block_width, int *block_height,
+                                int *block_data_size);
+
+void getPaddedSizeDefault(int *width, int *height,
+                          int block_width, int block_height);
+
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
                  int width, int height,
                  int block_width, int block_height, int block_data_size);
@@ -15,6 +21,12 @@ void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
                    int width, int height,
                    int block_width, int block_height, int block_data_size);
+
+void getSwizzleBlockSizeSwitch(int *block_width, int *block_height,
+                               int *block_data_size);
+
+void getPaddedSizeSwitch(int *width, int *height,
+                         int block_width, int block_height);
 
 void swizFuncSwitch(const uint8_t *data, uint8_t *new_data,
                     int width, int height,

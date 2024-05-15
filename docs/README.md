@@ -49,7 +49,7 @@ int main() {
     uint32_t swizzled_data_size = ...;
 
     // Check the buffer size.
-    if (swizzled_data_size < swizContextGetDataSize(context)) {
+    if (swizzled_data_size < swizGetSwizzledSize(context)) {
         printf("Console Swizzler expects more data.\n");
         swizFreeContext(context);
         free(swizzled_data);
@@ -57,8 +57,7 @@ int main() {
     }
 
     // Make a buffer for unswizzled data.
-    uint8_t *unswizzled_data;
-    swizContextAllocData(context, &unswizzled_data);
+    uint8_t *unswizzled_data = swizAllocUnswizzledData(context);
 
     // Do unswizzling
     ret = swizDoUnswizzle(swizzled_data, unswizzled_data, context);

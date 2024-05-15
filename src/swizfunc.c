@@ -45,6 +45,16 @@ static int block_pos_to_index(int x, int y, int pitch, int block_data_size) {
     return y * pitch + x * block_data_size;
 }
 
+void getSwizzleBlockSizeDefault(int *block_width, int *block_height,
+                                int *block_data_size) {
+    // do nothing
+}
+
+void getPaddedSizeDefault(int *width, int *height,
+                          int block_width, int block_height) {
+    // do nothing
+}
+
 // ps4 swizzling functions
 
 /**
@@ -129,6 +139,38 @@ void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
 #define GOB_BLOCK_COUNT_Y_SWITCH 8
 #define GOB_BLOCK_COUNT_SWITCH 32
 
+void getSwizzleBlockSizeSwitch(int *block_width, int *block_height,
+                               int *block_data_size) {
+    if (*block_data_size < 16) {
+        // expand block_width to make block_data_size equal to 16.
+        int expand_factor = 16 / *block_data_size;
+        *block_width *= expand_factor;
+        *block_data_size *= expand_factor;
+    }
+}
+
+static int get_gobs_per_block(int block_width, int block_height, int gob_count_y) {
+    if (block_height == 1) {
+        // uncompressed format should use 16.
+        return 16;
+    }
+    return MIN(gob_count_y, 8);  // TODO: some games use 16 here...
+}
+
+void getPaddedSizeSwitch(int *width, int *height,
+                         int block_width, int block_height) {
+    int block_count_x = CEIL_DIV(*width, block_width);
+    int block_count_y = CEIL_DIV(*height, block_height);
+    int gob_count_x = CEIL_DIV(block_count_x, GOB_BLOCK_COUNT_X_SWITCH);
+    int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
+    int gobs_per_block = get_gobs_per_block(block_width, block_height, gob_count_y);
+    int gob_count_y_aligned = ALIGN(gob_count_y, gobs_per_block);
+    int block_count_x_aligned = gob_count_x * GOB_BLOCK_COUNT_X_SWITCH;
+    int block_count_y_aligned = gob_count_y_aligned * GOB_BLOCK_COUNT_Y_SWITCH;
+    *width = block_count_x_aligned * block_width;
+    *height = block_count_y_aligned * block_height;
+}
+
 /**
  * Swizzling order for 4x8 matrix.
  *  0  2 16 18
@@ -155,24 +197,17 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                                   int width, int height,
                                   int block_width, int block_height, int block_data_size,
                                   CopyBlockFuncPtr copy_block_func) {
-    int pitch = CEIL_DIV(width, block_width) * block_data_size;
-
-    if (block_data_size < 16) {
-        // expand block_width to make block_data_size equal to 16.
-        int expand_factor = 16 / block_data_size;
-        block_width *= expand_factor;
-        block_data_size *= expand_factor;
-    }
-
     int block_count_x = CEIL_DIV(width, block_width);
     int block_count_y = CEIL_DIV(height, block_height);
+    int pitch = block_count_x * block_data_size;
 
     int gob_count_x = CEIL_DIV(block_count_x, GOB_BLOCK_COUNT_X_SWITCH);
     int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
 
-    int dest_index = 0;
     int max_index = pitch * block_count_y;
-    int gobs_per_block = MIN(gob_count_y, 16);
+    int gobs_per_block = get_gobs_per_block(block_width, block_height, gob_count_y);
+
+    int dest_index = 0;
     for (int i = 0; i < CEIL_DIV(gob_count_y, gobs_per_block); i++) {
         for (int x = 0; x < gob_count_x * GOB_BLOCK_COUNT_X_SWITCH; x += GOB_BLOCK_COUNT_X_SWITCH) {
             for (int k = 0; k < gobs_per_block; k++) {
@@ -186,21 +221,14 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
                     int data_index = block_pos_to_index(data_x, data_y,
                                                         pitch, block_data_size);
 
-                    if (data_x >= block_count_x || data_y >= block_count_y)
-                        continue;
-
-                    // We need to resize the block when it crosses the right edge of texture.
-                    int block_data_size_rounded = MIN(pitch - (data_index % pitch),
-                                                      block_data_size);
-
                     // Check access violation in debug build.
                     CHECK_MEMORY_INDEX_ON_DEBUG(data_index, dest_index,
-                                                max_index, block_data_size_rounded)
+                                                max_index, block_data_size)
 
                     // copy a block at (data_x, data_y) to dest_index,
                     // or copy a block at dest_index to (data_x, data_y)
                     copy_block_func(data, data_index,
-                                    new_data, dest_index, block_data_size_rounded);
+                                    new_data, dest_index, block_data_size);
                     dest_index += block_data_size;
                 }
             }
