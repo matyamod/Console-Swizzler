@@ -17,17 +17,21 @@ Rest of them are here.
 Built binary contains swizzler-cli that can swizzle dds data.
 
 ```
-Usage: swizzler-cli <command> <input> <output> [<platform>]
+Usage: swizzler-cli <command> <input> <output> [<platform> [<gobs_height>]]
 
     command:
         swizzle : swizzles an input dds.
         unswizzle : unswizzles an input dds.
 
-    platform: ps4, switch
+    platform: ps4 or switch
 
+    gobs_height: The max height of GOBs blocks for switch.
+                 The default value is 16. UE games use 8.
+                 Switch also supports 1, 2, 4, and 32.
 Examples:
     swizzler-cli swizzle raw.dds swizzled.dds
     swizzler-cli unswizzle swizzled.dds raw.dds ps4
+    swizzler-cli unswizzle swizzled.dds raw.dds switch 8
 ```
 
 ## Example

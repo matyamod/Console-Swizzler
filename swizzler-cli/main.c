@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
         swizzle = 1;
     } else if (strcmp(command, "unswizzle") != 0) {
         printUsage();
-        printf("Unknown command. (%s)", command);
+        printf("Unknown command. (%s)\n", command);
         return 1;
     }
 
@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
             platform = SWIZ_PLATFORM_SWITCH;
         } else if (strcmp(platform_name, "ps4") != 0) {
             printUsage();
-            printf("Unknown platform. (%s)", platform_name);
+            printf("Unknown platform. (%s)\n", platform_name);
             return 1;
         }
         printf("Platform: %s\n", platform_name);
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
     printf("Loading %s...\n", input_filename);
     dds_image_t image = dds_load(input_filename);
     if (image == NULL) {
-        printf("Failed to load dds.");
+        printf("Failed to load dds.\n");
         return 1;
     }
     dds_image_t out_image = dds_copy(image);
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
     dds_get_block_info(image, &block_width, &block_height, &block_data_size);
 
     if (block_data_size == 0) {
-        printf("Unsupported pixel format.");
+        printf("Unsupported pixel format.\n");
         return 1;
     }
 
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
         new_data_size = swizGetUnswizzledSize(context);
     }
     if (image->pixels_size < data_size) {
-        printf("Failed to calculate data size.");
+        printf("Failed to calculate data size.\n");
         swizFreeContext(context);
         dds_image_free(image);
         dds_image_free(out_image);
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (new_data == NULL) {
-        printf("Memory allocation error.");
+        printf("Memory allocation error.\n");
         swizFreeContext(context);
         dds_image_free(image);
         dds_image_free(out_image);
