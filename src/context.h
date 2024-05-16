@@ -3,20 +3,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "console-swizzler.h"
+#include "mipcontext.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef void (*SwizFuncPtr)(const uint8_t *data, uint8_t *new_data,
-                            int width, int height,
-                            int block_width, int block_height, int block_data_size);
+                            const MipContext *context);
 
-typedef void (*GetSwizzleBlockSizeFuncPtr)(int *block_width, int *block_height,
-                                           int *block_data_size);
+typedef void (*GetSwizzleBlockSizeFuncPtr)(MipContext *context);
 
-typedef void (*GetPaddedSizeFuncPtr)(int *width, int *height,
-                                     int block_width, int block_height);
+typedef void (*GetPaddedSizeFuncPtr)(MipContext *context);
 
 struct SwizContext {
     SwizPlatform platform;
@@ -25,6 +23,7 @@ struct SwizContext {
     int block_width;
     int block_height;
     int block_data_size;
+    int gobs_height;
     int has_mips;
     SwizFuncPtr SwizFunc;
     SwizFuncPtr UnswizFunc;

@@ -3,38 +3,31 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "console-swizzler.h"
+#include "mipcontext.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void getSwizzleBlockSizeDefault(int *block_width, int *block_height,
-                                int *block_data_size);
+void getSwizzleBlockSizeDefault(MipContext *context);
 
-void getPaddedSizeDefault(int *width, int *height,
-                          int block_width, int block_height);
+void getPaddedSizeDefault(MipContext *context);
 
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                 int width, int height,
-                 int block_width, int block_height, int block_data_size);
+                 const MipContext *context);
 
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                   int width, int height,
-                   int block_width, int block_height, int block_data_size);
+                   const MipContext *context);
 
-void getSwizzleBlockSizeSwitch(int *block_width, int *block_height,
-                               int *block_data_size);
+void getSwizzleBlockSizeSwitch(MipContext *context);
 
-void getPaddedSizeSwitch(int *width, int *height,
-                         int block_width, int block_height);
+void getPaddedSizeSwitch(MipContext *context);
 
 void swizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                    int width, int height,
-                    int block_width, int block_height, int block_data_size);
+                    const MipContext *context);
 
 void unswizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                      int width, int height,
-                      int block_width, int block_height, int block_data_size);
+                      const MipContext *context);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,7 @@ typedef void (*CopyBlockFuncPtr)(const uint8_t *data, int data_index,
                                  uint8_t *dest, int dest_index, int block_data_size);
 
 static void copy_block(const uint8_t *data, int data_index,
-                                   uint8_t *dest, int dest_index, int block_data_size) {
+                       uint8_t *dest, int dest_index, int block_data_size) {
     memcpy(dest + dest_index, data + data_index, block_data_size);
 }
 
@@ -45,13 +45,11 @@ static int block_pos_to_index(int x, int y, int pitch, int block_data_size) {
     return y * pitch + x * block_data_size;
 }
 
-void getSwizzleBlockSizeDefault(int *block_width, int *block_height,
-                                int *block_data_size) {
+void getSwizzleBlockSizeDefault(MipContext *context) {
     // do nothing
 }
 
-void getPaddedSizeDefault(int *width, int *height,
-                          int block_width, int block_height) {
+void getPaddedSizeDefault(MipContext *context) {
     // do nothing
 }
 
@@ -83,11 +81,13 @@ static int MORTON8x8[64] = {
 #define GOB_BLOCK_COUNT_PS4 64
 
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
-                               int width, int height,
-                               int block_width, int block_height, int block_data_size,
+                               const MipContext *context,
                                CopyBlockFuncPtr copy_block_func) {
-    int block_count_x = CEIL_DIV(width, block_width);
-    int block_count_y = CEIL_DIV(height, block_height);
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_data_size = context->block_data_size;
+    int block_count_x = CEIL_DIV(context->width, block_width);
+    int block_count_y = CEIL_DIV(context->height, block_height);
     int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
     int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
     int pitch = block_count_x * block_data_size;
@@ -122,15 +122,13 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
 }
 
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                 int width, int height, int block_width, int block_height, int block_data_size) {
-    swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_height, block_data_size, copy_block);
+                 const MipContext *context) {
+    swiz_func_ps4_base(data, new_data, context, copy_block);
 }
 
 void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
-                   int width, int height, int block_width, int block_height, int block_data_size) {
-    swiz_func_ps4_base(data, new_data, width, height,
-                       block_width, block_height, block_data_size, copy_block_inverse);
+                   const MipContext *context) {
+    swiz_func_ps4_base(data, new_data, context, copy_block_inverse);
 }
 
 // switch swizzling functions
@@ -139,36 +137,41 @@ void unswizFuncPS4(const uint8_t *data, uint8_t *new_data,
 #define GOB_BLOCK_COUNT_Y_SWITCH 8
 #define GOB_BLOCK_COUNT_SWITCH 32
 
-void getSwizzleBlockSizeSwitch(int *block_width, int *block_height,
-                               int *block_data_size) {
-    if (*block_data_size < 16) {
+void getSwizzleBlockSizeSwitch(MipContext *context) {
+    if (context->block_data_size < 16) {
         // expand block_width to make block_data_size equal to 16.
-        int expand_factor = 16 / *block_data_size;
-        *block_width *= expand_factor;
-        *block_data_size *= expand_factor;
+        int expand_factor = 16 / context->block_data_size;
+        context->block_width *= expand_factor;
+        context->block_data_size *= expand_factor;
     }
 }
 
-static int get_gobs_per_block(int block_width, int block_height, int gob_count_y) {
+// According to Tegra X1 TRM, gobs_height should be 16 in most cases.
+// It also supports 1, 2, 4, 8, and 32. For example, UE games use 8.
+// You can change the value with swizContextSetGobsHeight()
+static int get_gobs_per_block(int block_width, int block_height,
+                              int gob_count_y, int gobs_height) {
     if (block_height == 1) {
         // uncompressed format should use 16.
         return 16;
     }
-    return MIN(gob_count_y, 8);  // TODO: some games use 16 here...
+    return MIN(gob_count_y, gobs_height);
 }
 
-void getPaddedSizeSwitch(int *width, int *height,
-                         int block_width, int block_height) {
-    int block_count_x = CEIL_DIV(*width, block_width);
-    int block_count_y = CEIL_DIV(*height, block_height);
+void getPaddedSizeSwitch(MipContext *context) {
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_count_x = CEIL_DIV(context->width, block_width);
+    int block_count_y = CEIL_DIV(context->height, block_height);
     int gob_count_x = CEIL_DIV(block_count_x, GOB_BLOCK_COUNT_X_SWITCH);
     int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
-    int gobs_per_block = get_gobs_per_block(block_width, block_height, gob_count_y);
+    int gobs_per_block = get_gobs_per_block(block_width, block_height,
+                                            gob_count_y, context->gobs_height);
     int gob_count_y_aligned = ALIGN(gob_count_y, gobs_per_block);
     int block_count_x_aligned = gob_count_x * GOB_BLOCK_COUNT_X_SWITCH;
     int block_count_y_aligned = gob_count_y_aligned * GOB_BLOCK_COUNT_Y_SWITCH;
-    *width = block_count_x_aligned * block_width;
-    *height = block_count_y_aligned * block_height;
+    context->width = block_count_x_aligned * block_width;
+    context->height = block_count_y_aligned * block_height;
 }
 
 /**
@@ -194,18 +197,23 @@ static int SWIZ_ORDER_SWITCH[32] = {
 };
 
 static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
-                                  int width, int height,
-                                  int block_width, int block_height, int block_data_size,
+                                  const MipContext *context,
                                   CopyBlockFuncPtr copy_block_func) {
-    int block_count_x = CEIL_DIV(width, block_width);
-    int block_count_y = CEIL_DIV(height, block_height);
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_data_size = context->block_data_size;
+    int block_count_x = CEIL_DIV(context->width, block_width);
+    int block_count_y = CEIL_DIV(context->height, block_height);
     int pitch = block_count_x * block_data_size;
 
     int gob_count_x = CEIL_DIV(block_count_x, GOB_BLOCK_COUNT_X_SWITCH);
     int gob_count_y = CEIL_DIV(block_count_y, GOB_BLOCK_COUNT_Y_SWITCH);
 
+#ifdef SWIZ_DEBUG
     int max_index = pitch * block_count_y;
-    int gobs_per_block = get_gobs_per_block(block_width, block_height, gob_count_y);
+#endif
+    int gobs_per_block = get_gobs_per_block(block_width, block_height,
+                                            gob_count_y, context->gobs_height);
 
     int dest_index = 0;
     for (int i = 0; i < CEIL_DIV(gob_count_y, gobs_per_block); i++) {
@@ -237,13 +245,11 @@ static void swiz_func_switch_base(const uint8_t *data, uint8_t *new_data,
 }
 
 void swizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                 int width, int height, int block_width, int block_height, int block_data_size) {
-    swiz_func_switch_base(data, new_data, width, height,
-                          block_width, block_height, block_data_size, copy_block);
+                    const MipContext *context) {
+    swiz_func_switch_base(data, new_data, context, copy_block);
 }
 
 void unswizFuncSwitch(const uint8_t *data, uint8_t *new_data,
-                   int width, int height, int block_width, int block_height, int block_data_size) {
-    swiz_func_switch_base(data, new_data, width, height,
-                          block_width, block_height, block_data_size, copy_block_inverse);
+                      const MipContext *context) {
+    swiz_func_switch_base(data, new_data, context, copy_block_inverse);
 }

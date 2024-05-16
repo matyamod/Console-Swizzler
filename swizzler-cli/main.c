@@ -5,24 +5,29 @@
 
 void printUsage() {
     const char* usage =
-        "Usage: swizzler-cli <command> <input> <output> [<platform>]\n"
+        "Usage: swizzler-cli <command> <input> <output> [<platform> [<gobs_height>]]\n"
         "\n"
         "    command:\n"
         "        swizzle : swizzles an input dds.\n"
         "        unswizzle : unswizzles an input dds.\n"
         "\n"
-        "    platform: ps4, switch\n"
+        "    platform: ps4 or switch\n"
+        "\n"
+        "    gobs_height: The max height of GOBs blocks for switch.\n"
+        "                 The default value is 16. UE games use 8.\n"
+        "                 Switch also supports 1, 2, 4, and 32."
         "\n"
         "Examples:\n"
         "    swizzler-cli swizzle raw.dds swizzled.dds\n"
         "    swizzler-cli unswizzle swizzled.dds raw.dds ps4\n"
+        "    swizzler-cli unswizzle swizzled.dds raw.dds switch 8\n"
         "\n";
     printf("%s", usage);
 }
 
 int main(int argc, char* argv[]) {
     printf("Console Swizzler v%s\n", swizGetVersion());
-    if (argc != 4 && argc != 5) {
+    if (argc < 4 && argc > 6) {
         printUsage();
         return 1;
     }
@@ -41,7 +46,7 @@ int main(int argc, char* argv[]) {
     const char* platform_name;
     SwizPlatform platform = SWIZ_PLATFORM_PS4;
 
-    if (argc == 5) {
+    if (argc >= 5) {
         platform_name = argv[4];
         if (strcmp(platform_name, "switch") == 0) {
             platform = SWIZ_PLATFORM_SWITCH;
@@ -53,6 +58,35 @@ int main(int argc, char* argv[]) {
         printf("Platform: %s\n", platform_name);
     } else {
         printf("Platform: ps4\n");
+    }
+
+    int gobs_height = 16;
+
+    if (platform == SWIZ_PLATFORM_SWITCH) {
+        if (argc == 6) {
+            const char* gobs_height_str = argv[5];
+            if (strcmp(gobs_height_str, "1") == 0) {
+                gobs_height = 1;
+            } else if (strcmp(gobs_height_str, "2") == 0) {
+                gobs_height = 2;
+            } else if (strcmp(gobs_height_str, "4") == 0) {
+                gobs_height = 4;
+            } else if (strcmp(gobs_height_str, "8") == 0) {
+                gobs_height = 8;
+            } else if (strcmp(gobs_height_str, "16") == 0) {
+                gobs_height = 16;
+            } else if (strcmp(gobs_height_str, "32") == 0) {
+                gobs_height = 32;
+            } else {
+                printUsage();
+                printf("The max height of GOB blocks should be 1, 2, 4, 8, 16, or 32. (%s)\n",
+                       gobs_height_str);
+                return 1;
+            }
+            printf("GOBs height: %s\n", gobs_height_str);
+        } else {
+            printf("GOBs height: 16\n");
+        }
     }
 
     int width, height, block_width, block_height, block_data_size;
@@ -79,6 +113,7 @@ int main(int argc, char* argv[]) {
     context = swizNewContext();
     swizContextSetPlatform(context, platform);
     swizContextSetTextureSize(context, width, height);
+    swizContextSetGobsHeight(context, gobs_height);
     swizContextSetHasMips(context, image->header.mipmap_count > 1);
     swizContextSetBlockInfo(context, block_width, block_height, block_data_size);
 
