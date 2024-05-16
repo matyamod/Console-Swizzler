@@ -1,5 +1,5 @@
 #include <string.h>
-#include "swizfunc.h"
+#include "priv.h"
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define CEIL_DIV(X, PAD) (((X) + (PAD) - 1) / (PAD))

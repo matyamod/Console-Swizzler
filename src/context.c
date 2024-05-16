@@ -1,6 +1,5 @@
 #include "console-swizzler.h"
-#include "context.h"
-#include "swizfunc.h"
+#include "priv.h"
 
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 #define CEIL_DIV(X, PAD) (((X) + (PAD) - 1) / (PAD))
