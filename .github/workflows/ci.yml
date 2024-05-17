@@ -24,8 +24,8 @@ jobs:
           python-version: '3.10'
       - run: pip3 install cpplint codespell
       - run: |
-        cpplint --recursive --quiet .
-        codespell
+          cpplint --recursive --quiet .
+          codespell
 
   test:
     name: test-${{ matrix.os }}

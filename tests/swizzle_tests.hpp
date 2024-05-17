@@ -12,7 +12,8 @@
 // BC1 512x512 nomips 8gobs
 // B8G8R8A8 128x119
 
-static int read_dds(std::string filename, int has_dx10_header, uint8_t **pixels, uint32_t *pixels_size) {
+static int read_dds(std::string filename, int has_dx10_header,
+                    uint8_t **pixels, uint32_t *pixels_size) {
     // open the file
     FILE* f = fopen(filename.c_str(), "rb");
     if (f == NULL) {
