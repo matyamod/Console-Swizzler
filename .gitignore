@@ -19,3 +19,11 @@ subprojects/*
 docs/doxygen-awesome-css
 docs/html
 docs/latex
+
+# coverage report
+coverage-report
+*.log
+
+# test files
+!tests/dds/*.dds
+!tests/dds/*.png

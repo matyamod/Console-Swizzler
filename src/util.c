@@ -18,6 +18,8 @@ const char* swizGetErrorMessage(SwizError error) {
         return "Width and height should be non-negative numbers.";
     case SWIZ_ERROR_INVALID_BLOCK_INFO:
         return "Block width, heghit, and data size should be positive.";
+    case SWIZ_ERROR_INVALID_ARRAY_SIZE:
+        return "Array size should be positive.";
     case SWIZ_ERROR_INVALID_GOBS_HEIGHT:
         return "The max height of GOB blocks should be 1, 2, 4, 8, 16, or 32.";
     case SWIZ_ERROR_MEMORY_ALLOC:

@@ -48,6 +48,7 @@ _SWIZ_ENUM(SwizError) {
     SWIZ_ERROR_UNKNOWN_PLATFORM,
     SWIZ_ERROR_INVALID_TEXTURE_SIZE,
     SWIZ_ERROR_INVALID_BLOCK_INFO,
+    SWIZ_ERROR_INVALID_ARRAY_SIZE,
     SWIZ_ERROR_INVALID_GOBS_HEIGHT,
     SWIZ_ERROR_MEMORY_ALLOC,
     SWIZ_ERROR_NULL_POINTER,
@@ -130,6 +131,27 @@ _SWIZ_EXTERN SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform
 _SWIZ_EXTERN SwizError swizContextSetTextureSize(SwizContext *context, int width, int height);
 
 /**
+ * Sets if textures have mipmaps or not.
+ *
+ * @param context SwizContext instance
+ * @param has_mips Whether if texutures have mipmaps or not
+ * @memberof SwizContext
+ */
+_SWIZ_EXTERN void swizContextSetHasMips(SwizContext *context, int has_mips);
+
+/**
+ * Sets the number of textures in a buffer.
+ *
+ * @note The default value is one.
+ *
+ * @param context SwizContext instance
+ * @param array_size The number of textures in a buffer
+ * @returns Non-zero if it got errors
+ * @memberof SwizContext
+ */
+_SWIZ_EXTERN SwizError swizContextSetArraySize(SwizContext *context, int array_size);
+
+/**
  * Sets the max height of GOBs blocks for switch.
  *
  * @note The default value is 16. UE games use 8. Switch also supports 1, 2, 4, and 32.
@@ -140,15 +162,6 @@ _SWIZ_EXTERN SwizError swizContextSetTextureSize(SwizContext *context, int width
  * @memberof SwizContext
  */
 _SWIZ_EXTERN SwizError swizContextSetGobsHeight(SwizContext *context, int gobs_height);
-
-/**
- * Sets if texutures have mipmaps or not.
- *
- * @param context SwizContext instance
- * @param has_mips Whether if texutures have mipmaps or not
- * @memberof SwizContext
- */
-_SWIZ_EXTERN void swizContextSetHasMips(SwizContext *context, int has_mips);
 
 /**
  * Sets block size to context.

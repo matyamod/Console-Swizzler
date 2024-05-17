@@ -56,8 +56,9 @@ struct SwizContext {
     int block_width;
     int block_height;
     int block_data_size;
-    int gobs_height;
     int has_mips;
+    int array_size;
+    int gobs_height;
     SwizFuncPtr SwizFunc;
     SwizFuncPtr UnswizFunc;
     GetSwizzleBlockSizeFuncPtr GetSwizzleBlockSizeFunc;

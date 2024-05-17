@@ -1,24 +1,112 @@
 #pragma once
+#include <stdio.h>
 #include <gtest/gtest.h>
 #include <vector>
 #include <utility>
 #include <array>
+#include <string>
 #include "console-swizzler.h"
 
 // TODO: add more tests
+// BC1 512x512 nomips 16gobs
+// BC1 512x512 nomips 8gobs
+// B8G8R8A8 128x119
+
+static int read_dds(std::string filename, int has_dx10_header, uint8_t **pixels, uint32_t *pixels_size) {
+    // open the file
+    FILE* f = fopen(filename.c_str(), "rb");
+    if (f == NULL) {
+        std::string filename2 = "tests/" + filename;
+        f = fopen(filename2.c_str(), "rb");
+        if (f == NULL)
+            return 0;
+    }
+
+    // get file size
+    fseek(f, 0, SEEK_END);
+    uint32_t file_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    // check file size
+    uint32_t head_size = 128;
+    if (has_dx10_header)
+        head_size += 20;
+    if (file_size < head_size) {
+        fclose(f);
+        return 0;
+    }
+
+    // allocate a buffer
+    *pixels_size = file_size - head_size;
+    *pixels = (uint8_t*)malloc(*pixels_size);
+    if (*pixels == nullptr) {
+        fclose(f);
+        return 0;
+    }
+
+    // read pixel data
+    fseek(f, head_size, SEEK_SET);
+    fread(*pixels, 1, *pixels_size, f);
+    fclose(f);
+    return 1;
+}
 
 class SwizzleTest : public ::testing::Test {
  protected:
     virtual void SetUp() {
         context = swizNewContext();
         ASSERT_NE(nullptr, context);
+        swizzled = nullptr;
+        unswizzled = nullptr;
     }
 
     virtual void TearDown() {
         swizFreeContext(context);
+        free(swizzled);
+        free(unswizzled);
+    }
+
+    void ReadSwizzledDDS(const char* filename, int has_dx10_header) {
+        int ret = read_dds(filename, has_dx10_header, &swizzled, &swizzled_size);
+        ASSERT_EQ(1, ret);
+    }
+
+    void ReadUnswizzledDDS(const char* filename, int has_dx10_header) {
+        int ret = read_dds(filename, has_dx10_header, &unswizzled, &unswizzled_size);
+        ASSERT_EQ(1, ret);
+    }
+
+    void TestSwizzle() {
+        ASSERT_EQ(swizzled_size, swizGetSwizzledSize(context));
+        uint8_t *actual_swizzled = swizAllocSwizzledData(context);
+        ASSERT_NE(nullptr, actual_swizzled);
+        ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
+        swizDoSwizzle(unswizzled, actual_swizzled, context);
+        ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
+        for (int i = 0; i < swizzled_size; i++) {
+            ASSERT_EQ(swizzled[i], actual_swizzled[i]);
+        }
+        free(actual_swizzled);
+    }
+
+    void TestUnswizzle() {
+        ASSERT_EQ(unswizzled_size, swizGetUnswizzledSize(context));
+        uint8_t *actual_unswizzled = swizAllocUnswizzledData(context);
+        ASSERT_NE(nullptr, actual_unswizzled);
+        ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
+        swizDoUnswizzle(swizzled, actual_unswizzled, context);
+        ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
+        for (int i = 0; i < unswizzled_size; i++) {
+            ASSERT_EQ(unswizzled[i], actual_unswizzled[i]);
+        }
+        free(actual_unswizzled);
     }
 
     SwizContext *context;
+    uint8_t *swizzled;
+    uint32_t swizzled_size;
+    uint8_t *unswizzled;
+    uint32_t unswizzled_size;
 };
 
 TEST_F(SwizzleTest, swizzleError) {
@@ -99,6 +187,19 @@ TEST_F(SwizzleTest, unswizzleBlockPS4) {
         ASSERT_EQ(UnswizzledBlockPS4[i], unswizzled[i]);
     }
     free(unswizzled);
+}
+
+TEST_F(SwizzleTest, swizzleBlockPS4Mips) {
+    ReadSwizzledDDS("dds/bc1_256x256_mips_ps4.dds", 0);
+    ReadUnswizzledDDS("dds/bc1_256x256_mips.dds", 0);
+
+    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
+    swizContextSetTextureSize(context, 256, 256);
+    swizContextSetBlockInfo(context, 4, 4, 8);
+    swizContextSetHasMips(context, 1);
+
+    TestSwizzle();
+    TestUnswizzle();
 }
 
 static uint8_t UnswizzledBlockSwitch[32 * 16] = {
@@ -199,4 +300,17 @@ TEST_F(SwizzleTest, unswizzleBlockSwitch) {
         ASSERT_EQ(UnswizzledBlockSwitch[i], unswizzled[i]);
     }
     free(unswizzled);
+}
+
+TEST_F(SwizzleTest, swizzleBlockSwitchMips) {
+    ReadSwizzledDDS("dds/bc1_256x256_mips_switch.dds", 0);
+    ReadUnswizzledDDS("dds/bc1_256x256_mips.dds", 0);
+
+    swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
+    swizContextSetTextureSize(context, 256, 256);
+    swizContextSetBlockInfo(context, 4, 4, 8);
+    swizContextSetHasMips(context, 1);
+
+    TestSwizzle();
+    TestUnswizzle();
 }

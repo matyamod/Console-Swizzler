@@ -4,3 +4,5 @@ test_exe = executable('console_swizzler_test',
     install : false)
 
 test('console_swizzler_test', test_exe)
+
+subdir('dds')

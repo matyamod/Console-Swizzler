@@ -65,6 +65,60 @@ TEST_F(ContextTest, swizContextSetBlockInfo) {
     }
 }
 
+TEST_F(ContextTest, swizContextSetArraySize) {
+    std::vector<std::pair<int, unsigned int>> cases = {
+        { 1, SWIZ_OK },
+        { 4, SWIZ_OK },
+        { 0, SWIZ_ERROR_INVALID_ARRAY_SIZE },
+    };
+    for (auto c : cases) {
+        swizContextInit(context);
+        EXPECT_EQ(c.second, swizContextSetArraySize(context, c.first));
+    }
+}
+
+TEST_F(ContextTest, swizContextSetGobsHeight) {
+    std::vector<std::pair<int, unsigned int>> cases = {
+        { 1, SWIZ_OK },
+        { 2, SWIZ_OK },
+        { 4, SWIZ_OK },
+        { 8, SWIZ_OK },
+        { 16, SWIZ_OK },
+        { 32, SWIZ_OK },
+        { 0, SWIZ_ERROR_INVALID_GOBS_HEIGHT },
+        { 3, SWIZ_ERROR_INVALID_GOBS_HEIGHT },
+    };
+    for (auto c : cases) {
+        swizContextInit(context);
+        EXPECT_EQ(c.second, swizContextSetGobsHeight(context, c.first));
+    }
+}
+
+TEST_F(ContextTest, swizGetSwizzledSize) {
+    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
+    swizContextSetTextureSize(context, 128, 128);
+    swizContextSetBlockInfo(context, 4, 4, 8);
+    uint32_t data_size = swizGetSwizzledSize(context);
+    ASSERT_EQ(32 * 32 * 8, data_size);
+}
+
+TEST_F(ContextTest, swizGetSwizzledSizePadding) {
+    swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
+    swizContextSetTextureSize(context, 4, 4);
+    swizContextSetBlockInfo(context, 4, 4, 8);
+    uint32_t data_size = swizGetSwizzledSize(context);
+    ASSERT_EQ(32 * 16, data_size);
+}
+
+TEST_F(ContextTest, swizGetSwizzledSizeError) {
+    swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
+    swizContextSetTextureSize(context, -1, -1);
+    swizContextSetBlockInfo(context, 1, 1, 4);
+    uint32_t data_size = swizGetSwizzledSize(context);
+    ASSERT_EQ(0, data_size);
+    ASSERT_EQ(SWIZ_ERROR_INVALID_TEXTURE_SIZE, swizContextGetLastError(context));
+}
+
 TEST_F(ContextTest, swizGetUnswizzledSize) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 128, 128);
@@ -125,4 +179,13 @@ TEST_F(ContextTest, swizAllocUnswizzledDataError) {
     uint8_t *data = swizAllocUnswizzledData(context);
     ASSERT_EQ(nullptr, data);
     ASSERT_EQ(SWIZ_ERROR_INVALID_BLOCK_INFO, swizContextGetLastError(context));
+}
+
+TEST_F(ContextTest, swizAllocSwizzledDataError) {
+    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
+    swizContextSetTextureSize(context, -1, -1);
+    swizContextSetBlockInfo(context, 1, 1, 4);
+    uint8_t *data = swizAllocSwizzledData(context);
+    ASSERT_EQ(nullptr, data);
+    ASSERT_EQ(SWIZ_ERROR_INVALID_TEXTURE_SIZE, swizContextGetLastError(context));
 }
