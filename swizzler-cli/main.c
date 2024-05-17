@@ -27,7 +27,7 @@ void printUsage() {
 
 int main(int argc, char* argv[]) {
     printf("Console Swizzler v%s\n", swizGetVersion());
-    if (argc < 4 && argc > 6) {
+    if (argc < 4 || argc > 6) {
         printUsage();
         return 1;
     }

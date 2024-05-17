@@ -164,30 +164,30 @@ TEST_F(SwizzleTest, swizzleBlockPS4) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 8, 8);
     swizContextSetBlockInfo(context, 1, 1, 1);
-    uint8_t *swizzled = swizAllocSwizzledData(context);
-    ASSERT_NE(nullptr, swizzled);
+    uint8_t *actual_swizzled = swizAllocSwizzledData(context);
+    ASSERT_NE(nullptr, actual_swizzled);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-    swizDoSwizzle(&UnswizzledBlockPS4[0], swizzled, context);
+    swizDoSwizzle(&UnswizzledBlockPS4[0], actual_swizzled, context);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQ(SwizzledBlockPS4[i], swizzled[i]);
+        ASSERT_EQ(SwizzledBlockPS4[i], actual_swizzled[i]);
     }
-    free(swizzled);
+    free(actual_swizzled);
 }
 
 TEST_F(SwizzleTest, unswizzleBlockPS4) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
     swizContextSetTextureSize(context, 8, 8);
     swizContextSetBlockInfo(context, 1, 1, 1);
-    uint8_t *unswizzled = swizAllocUnswizzledData(context);
-    ASSERT_NE(nullptr, unswizzled);
+    uint8_t *actual_unswizzled = swizAllocUnswizzledData(context);
+    ASSERT_NE(nullptr, actual_unswizzled);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-    swizDoUnswizzle(&SwizzledBlockPS4[0], unswizzled, context);
+    swizDoUnswizzle(&SwizzledBlockPS4[0], actual_unswizzled, context);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
     for (int i = 0; i < 64; i++) {
-        ASSERT_EQ(UnswizzledBlockPS4[i], unswizzled[i]);
+        ASSERT_EQ(UnswizzledBlockPS4[i], actual_unswizzled[i]);
     }
-    free(unswizzled);
+    free(actual_unswizzled);
 }
 
 TEST_F(SwizzleTest, swizzleBlockPS4Mips) {
@@ -275,32 +275,34 @@ static uint8_t SwizzledBlockSwitch[32 * 16] = {
 
 TEST_F(SwizzleTest, swizzleBlockSwitch) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
-    swizContextSetTextureSize(context, 4, 8);
-    swizContextSetBlockInfo(context, 1, 1, 16);
-    uint8_t *swizzled = swizAllocSwizzledData(context);
-    ASSERT_NE(nullptr, swizzled);
+    swizContextSetTextureSize(context, 16, 32);
+    swizContextSetBlockInfo(context, 4, 4, 16);
+    ASSERT_EQ(32 * 16, swizGetSwizzledSize(context));
+    uint8_t *actual_swizzled = swizAllocSwizzledData(context);
+    ASSERT_NE(nullptr, actual_swizzled);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-    swizDoSwizzle(&UnswizzledBlockSwitch[0], swizzled, context);
+    swizDoSwizzle(&UnswizzledBlockSwitch[0], actual_swizzled, context);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
     for (int i = 0; i < 32 * 16; i++) {
-        ASSERT_EQ(SwizzledBlockSwitch[i], swizzled[i]);
+        ASSERT_EQ(SwizzledBlockSwitch[i], actual_swizzled[i]);
     }
-    free(swizzled);
+    free(actual_swizzled);
 }
 
 TEST_F(SwizzleTest, unswizzleBlockSwitch) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
-    swizContextSetTextureSize(context, 4, 8);
-    swizContextSetBlockInfo(context, 1, 1, 16);
-    uint8_t *unswizzled = swizAllocUnswizzledData(context);
-    ASSERT_NE(nullptr, unswizzled);
+    swizContextSetTextureSize(context, 16, 32);
+    swizContextSetBlockInfo(context, 4, 4, 16);
+    ASSERT_EQ(32 * 16, swizGetUnswizzledSize(context));
+    uint8_t *actual_unswizzled = swizAllocUnswizzledData(context);
+    ASSERT_NE(nullptr, actual_unswizzled);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-    swizDoUnswizzle(&SwizzledBlockSwitch[0], unswizzled, context);
+    swizDoUnswizzle(&SwizzledBlockSwitch[0], actual_unswizzled, context);
     ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
     for (int i = 0; i < 32 * 16; i++) {
-        ASSERT_EQ(UnswizzledBlockSwitch[i], unswizzled[i]);
+        ASSERT_EQ(UnswizzledBlockSwitch[i], actual_unswizzled[i]);
     }
-    free(unswizzled);
+    free(actual_unswizzled);
 }
 
 TEST_F(SwizzleTest, swizzleBlockSwitchMips) {
