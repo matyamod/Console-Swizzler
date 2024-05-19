@@ -80,6 +80,18 @@ static int MORTON8x8[64] = {
 #define GOB_BLOCK_COUNT_X_PS4 8
 #define GOB_BLOCK_COUNT_PS4 64
 
+void getPaddedSizePS4(MipContext *context) {
+    int block_width = context->block_width;
+    int block_height = context->block_height;
+    int block_data_size = context->block_data_size;
+    int block_count_x = CEIL_DIV(context->width, block_width);
+    int block_count_y = CEIL_DIV(context->height, block_height);
+    int block_count_x_aligned = ALIGN(block_count_x, GOB_BLOCK_COUNT_X_PS4);
+    int block_count_y_aligned = ALIGN(block_count_y, GOB_BLOCK_COUNT_X_PS4);
+    context->width = block_count_x_aligned * block_width;
+    context->height = block_count_y_aligned * block_height;
+}
+
 static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
                                const MipContext *context,
                                CopyBlockFuncPtr copy_block_func) {
@@ -102,9 +114,6 @@ static void swiz_func_ps4_base(const uint8_t *data, uint8_t *new_data,
             for (int *t = &MORTON8x8[0]; t < &MORTON8x8[0] + GOB_BLOCK_COUNT_PS4; ++t) {
                 int data_x = x + *t % GOB_BLOCK_COUNT_X_PS4;
                 int data_y = y + *t / GOB_BLOCK_COUNT_X_PS4;
-
-                if (data_x >= block_count_x || data_y >= block_count_y)
-                    continue;
 
                 // copy a block at (data_x, data_y) to dest_index,
                 // or copy a block at dest_index to (data_x, data_y)

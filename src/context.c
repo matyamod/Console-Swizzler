@@ -41,7 +41,7 @@ SwizError swizContextSetPlatform(SwizContext *context, SwizPlatform platform) {
         context->SwizFunc = swizFuncPS4;
         context->UnswizFunc = unswizFuncPS4;
         context->GetSwizzleBlockSizeFunc = getSwizzleBlockSizeDefault;
-        context->GetPaddedSizeFunc = getPaddedSizeDefault;
+        context->GetPaddedSizeFunc = getPaddedSizePS4;
         break;
     case SWIZ_PLATFORM_SWITCH:
         context->SwizFunc = swizFuncSwitch;

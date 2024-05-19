@@ -192,8 +192,6 @@ _SWIZ_EXTERN SwizError swizContextGetLastError(SwizContext *context);
 /**
  * Gets binary size of swizzled data.
  *
- * @note It's equal to swizGetUnswizzledSize() on PS4.
- *
  * @param context SwizContext instance
  * @returns Binary size of swizzled data
  * @memberof SwizContext

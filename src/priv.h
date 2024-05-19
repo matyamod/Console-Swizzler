@@ -24,6 +24,8 @@ void getSwizzleBlockSizeDefault(MipContext *context);
 
 void getPaddedSizeDefault(MipContext *context);
 
+void getPaddedSizePS4(MipContext *context);
+
 void swizFuncPS4(const uint8_t *data, uint8_t *new_data,
                  const MipContext *context);
 

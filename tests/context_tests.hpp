@@ -102,7 +102,15 @@ TEST_F(ContextTest, swizGetSwizzledSize) {
     ASSERT_EQ(32 * 32 * 8, data_size);
 }
 
-TEST_F(ContextTest, swizGetSwizzledSizePadding) {
+TEST_F(ContextTest, swizGetSwizzledSizePaddingPS4) {
+    swizContextSetPlatform(context, SWIZ_PLATFORM_PS4);
+    swizContextSetTextureSize(context, 4, 4);
+    swizContextSetBlockInfo(context, 4, 4, 16);
+    uint32_t data_size = swizGetSwizzledSize(context);
+    ASSERT_EQ(32 * 32, data_size);
+}
+
+TEST_F(ContextTest, swizGetSwizzledSizePaddingSwitch) {
     swizContextSetPlatform(context, SWIZ_PLATFORM_SWITCH);
     swizContextSetTextureSize(context, 4, 4);
     swizContextSetBlockInfo(context, 4, 4, 8);
