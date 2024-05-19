@@ -84,7 +84,7 @@ class SwizzleTest : public ::testing::Test {
         ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
         swizDoSwizzle(unswizzled, actual_swizzled, context);
         ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-        for (int i = 0; i < swizzled_size; i++) {
+        for (uint32_t i = 0; i < swizzled_size; i++) {
             ASSERT_EQ(swizzled[i], actual_swizzled[i]);
         }
         free(actual_swizzled);
@@ -97,7 +97,7 @@ class SwizzleTest : public ::testing::Test {
         ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
         swizDoUnswizzle(swizzled, actual_unswizzled, context);
         ASSERT_EQ(SWIZ_OK, swizContextGetLastError(context));
-        for (int i = 0; i < unswizzled_size; i++) {
+        for (uint32_t i = 0; i < unswizzled_size; i++) {
             ASSERT_EQ(unswizzled[i], actual_unswizzled[i]);
         }
         free(actual_unswizzled);
